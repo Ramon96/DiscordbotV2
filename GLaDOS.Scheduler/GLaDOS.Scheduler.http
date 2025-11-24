@@ -1,0 +1,6 @@
+@GLaDOS.Scheduler_HostAddress = http://localhost:5034
+
+GET {{GLaDOS.Scheduler_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

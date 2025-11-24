@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLaDOS.Core", "GLaDOS.Core\GLaDOS.Core.csproj", "{8C7BECEF-0F05-4330-90B4-946963585606}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLaDOS.Scheduler", "GLaDOS.Scheduler\GLaDOS.Scheduler.csproj", "{76F1EBDE-A498-4D80-A981-70288575EB1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLaDOS.Discord", "GLaDOS.Discord\GLaDOS.Discord.csproj", "{014D9F7D-34C6-4389-AA25-8032DDE90A57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLaDOS.Infra", "GLaDOS.Infra\GLaDOS.Infra.csproj", "{78DADDCB-43E5-47CE-818C-48B5DF25EBC7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8C7BECEF-0F05-4330-90B4-946963585606}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C7BECEF-0F05-4330-90B4-946963585606}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C7BECEF-0F05-4330-90B4-946963585606}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C7BECEF-0F05-4330-90B4-946963585606}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76F1EBDE-A498-4D80-A981-70288575EB1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76F1EBDE-A498-4D80-A981-70288575EB1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76F1EBDE-A498-4D80-A981-70288575EB1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76F1EBDE-A498-4D80-A981-70288575EB1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{014D9F7D-34C6-4389-AA25-8032DDE90A57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{014D9F7D-34C6-4389-AA25-8032DDE90A57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{014D9F7D-34C6-4389-AA25-8032DDE90A57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{014D9F7D-34C6-4389-AA25-8032DDE90A57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78DADDCB-43E5-47CE-818C-48B5DF25EBC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78DADDCB-43E5-47CE-818C-48B5DF25EBC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78DADDCB-43E5-47CE-818C-48B5DF25EBC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78DADDCB-43E5-47CE-818C-48B5DF25EBC7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+	EndGlobalSection
+EndGlobal
