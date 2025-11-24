@@ -1,6 +1,3 @@
-
-    git push --set-upstream origin main# DiscordBotV2
-
 maak audit loggin
 
 ## Why This Project Exists
