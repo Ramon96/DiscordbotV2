@@ -9,7 +9,7 @@ public class HelloWorld : IHelloWorld, IHostedService, IAsyncDisposable
 {
     private readonly DiscordSocketClient _client;
 
-    public HelloWorld(DiscordSocketClient client)
+    public HelloWorld(DiscordSocketClient client)   
     {
         _client = client;
         _client.Log += async (msg) =>
