@@ -22,6 +22,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 var app = builder.Build();
 
+// Apply migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    context.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -32,8 +38,6 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-var backgroundJobs = app.Services.GetRequiredService<IBackgroundJobClient>();
-backgroundJobs.Enqueue(() => Console.WriteLine("Hello world from Hangfire!"));
 app.MapControllers();
 app.MapHangfireDashboard();
 

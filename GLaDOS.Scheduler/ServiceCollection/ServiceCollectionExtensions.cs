@@ -10,13 +10,14 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         var collection = services
-            .AddHangfire(configuration => configuration
+            .AddHangfire(config => config
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
                 .UsePostgreSqlStorage(options =>
                 {
                     options.UseNpgsqlConnection(connectionString);
+
                 }))
                 .AddHangfireServer();
 
