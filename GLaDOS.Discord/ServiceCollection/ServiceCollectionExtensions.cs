@@ -17,7 +17,6 @@ public static class ServiceCollectionExtensions
         var collection = services
             .AddSingleton(config)
             .AddSingleton<DiscordSocketClient>()
-            // .AddSingleton<IHelloWorld, HelloWorld>();
             .AddSingleton<IHelloWorld, HelloWorld>()
             .AddHostedService<HelloWorld>();
 
