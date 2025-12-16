@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Glados.Discord.Contracts;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace Glados.Discord;
@@ -8,10 +9,12 @@ namespace Glados.Discord;
 public class HelloWorld : IHelloWorld, IHostedService, IAsyncDisposable
 {
     private readonly DiscordSocketClient _client;
+    private readonly IConfiguration _configuration;
 
-    public HelloWorld(DiscordSocketClient client)   
+    public HelloWorld(DiscordSocketClient client, IConfiguration configuration)
     {
         _client = client;
+        _configuration = configuration;
         _client.Log += async (msg) =>
         {
             await Task.CompletedTask;
@@ -29,13 +32,18 @@ public class HelloWorld : IHelloWorld, IHostedService, IAsyncDisposable
         }
 
         var runescapeChannel = guild.TextChannels.FirstOrDefault(channel => channel.Name.Contains("runescape"));
-        
+
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await _client.LoginAsync(TokenType.Bot,
-            "MTQzODYyOTE1MjUxMjAyMDU1MQ.Gvfv_o.RRve0E_J1-nIC7Be81xOcR7Fgfr3cBmHZmUAnc");
+        var token = _configuration["Discord:Token"];
+        if (string.IsNullOrEmpty(token))
+        {
+            throw new InvalidOperationException("Discord token not found in configuration");
+        }
+
+        await _client.LoginAsync(TokenType.Bot, token);
 
         await _client.StartAsync();
     }
