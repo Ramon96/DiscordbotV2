@@ -10,17 +10,19 @@
         <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
         <PackageReference Include="Hangfire.Core" Version="1.8.22" />
         <PackageReference Include="Hangfire.PostgreSql" Version="1.20.13" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\GLaDOS.Core\GLaDOS.Core.csproj" />
       <ProjectReference Include="..\GLaDOS.Infra\GLaDOS.Infra.csproj" />
+      <ProjectReference Include="..\GLaDOS.OldschoolRunescape\GLaDOS.OldschoolRunescape.csproj" />
     </ItemGroup>
 
 </Project>
