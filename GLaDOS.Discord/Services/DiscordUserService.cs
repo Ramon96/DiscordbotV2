@@ -1,4 +1,5 @@
 ﻿using Glados.Discord.Services.Contracts;
+using Glados.Discord.Specifications;
 using GLaDOS.Domain.Discord;
 using GLaDOS.Infra.Repositories.Contracts;
 
@@ -8,13 +9,34 @@ public class DiscordUserService : IDiscordUserService
 {
     private readonly IRepository<DiscordUser> _repository;
 
-    public Task<bool> AddDiscordUserAsync(ulong discordId)
+    public DiscordUserService(IRepository<DiscordUser> repository)
     {
-        throw new NotImplementedException();
+        _repository = repository;
     }
 
-    public Task<DiscordUser?> GetDiscordUserAsync(ulong discordId)
+    public async Task AddDiscordUserAsync(ulong discordId, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var user = await _repository.GetByExpressionAsync(new DiscordUserWithDiscordId(discordId), cancellationToken);
+
+        if (user is not null)
+        {
+          throw new InvalidOperationException($"Discord user with ID {discordId} already exists.");
+        }
+        
+        var discordUser = new DiscordUser
+        {
+            DiscordId = discordId
+        };
+
+        await _repository.SaveChangesAsync(discordUser, cancellationToken);
+    }
+
+    public async Task<DiscordUser?> GetDiscordUserAsync(ulong discordId, CancellationToken cancellationToken)
+    {
+        var discordUser = new DiscordUserWithDiscordId(discordId);
+
+        var user = await _repository.GetByExpressionAsync(discordUser, cancellationToken);
+
+        return user;
     }
 }

@@ -31,10 +31,18 @@ public class CommandHandlerService : IHostedService
     private async Task OnReadyAsync()
     {
         Console.WriteLine("Discord client is ready, registering slash commands...");
+
+        // For testing - register to specific guild (instant)
+        const ulong guildId = 867074325824012379;
+        var guild = _client.GetGuild(guildId);
+
         foreach (var command in _commands)
         {
             Console.WriteLine($"Registering command: {command.Name}");
-            await _client.CreateGlobalApplicationCommandAsync(command.GetCommandDefinition());
+            if (guild != null)
+            {
+                await guild.CreateApplicationCommandAsync(command.GetCommandDefinition());
+            }
         }
     }
 

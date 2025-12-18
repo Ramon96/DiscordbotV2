@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GLaDOS.Infra.EntityFramework.Configurations;
 
-public abstract class EntityConfig<TEnity> where TEnity : Entity
+public abstract class EntityConfig<TEntity> : IEntityTypeConfiguration<TEntity> where TEntity : Entity
 {
-    public void Configure(EntityTypeBuilder<TEnity> builder)
+    public virtual void Configure(EntityTypeBuilder<TEntity> builder)
     {
         builder
             .Property(entity => entity.Id)
@@ -14,15 +14,17 @@ public abstract class EntityConfig<TEnity> where TEnity : Entity
             .HasDefaultValueSql("gen_random_uuid()");
         
         builder
-            .Property(entity => entity.ModifiedDate)
-            .HasColumnType("timestamp without time zone")
-            .HasColumnName("modified")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            .Property(entity => entity.CreatedDate)
+            .HasColumnType("timestamp with time zone")
+            .HasColumnName("created")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .ValueGeneratedOnAdd();
 
         builder
-            .Property(entity => entity.CreatedDate)
-            .HasColumnType("timestamp without time zone")
-            .HasColumnName("created")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            .Property(entity => entity.ModifiedDate)
+            .HasColumnType("timestamp with time zone")
+            .HasColumnName("modified")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .ValueGeneratedOnAdd();
     }
 }

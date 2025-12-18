@@ -3,6 +3,7 @@ using System;
 using GLaDOS.Infra.EntityFramework;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GLaDOS.Infra.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251218171503_updatedDiscordIdType")]
+    partial class updatedDiscordIdType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -26,29 +29,18 @@ namespace GLaDOS.Infra.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("DiscordId")
                         .HasColumnType("numeric(20,0)");
 
                     b.Property<DateTime>("ModifiedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("modified")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DiscordId")
-                        .IsUnique();
 
                     b.ToTable("DiscordUsers");
                 });
@@ -56,6 +48,7 @@ namespace GLaDOS.Infra.Migrations
             modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeBoss", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<int>("BossId")
@@ -69,8 +62,7 @@ namespace GLaDOS.Infra.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<long>("Rank")
                         .HasColumnType("bigint");
@@ -81,10 +73,12 @@ namespace GLaDOS.Infra.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Id")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("OldschoolRunescapeBosses");
                 });
@@ -92,6 +86,7 @@ namespace GLaDOS.Infra.Migrations
             modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeStat", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedDate")
@@ -108,8 +103,7 @@ namespace GLaDOS.Infra.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<long>("Rank")
                         .HasColumnType("bigint");
@@ -120,7 +114,12 @@ namespace GLaDOS.Infra.Migrations
                     b.Property<int>("SkillId")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("OldschoolRunescapeStats");
                 });
@@ -143,9 +142,6 @@ namespace GLaDOS.Infra.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Username")
-                        .IsUnique();
-
                     b.ToTable("OldschoolRunescapeUsers");
                 });
 
@@ -153,7 +149,7 @@ namespace GLaDOS.Infra.Migrations
                 {
                     b.HasOne("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeUser", "User")
                         .WithMany("Bosses")
-                        .HasForeignKey("Id")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -164,7 +160,7 @@ namespace GLaDOS.Infra.Migrations
                 {
                     b.HasOne("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeUser", "User")
                         .WithMany("Stats")
-                        .HasForeignKey("Id")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

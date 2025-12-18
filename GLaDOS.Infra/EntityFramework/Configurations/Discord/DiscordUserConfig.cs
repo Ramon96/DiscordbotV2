@@ -8,6 +8,8 @@ public class DiscordUserConfig : EntityConfig<DiscordUser>, IEntityTypeConfigura
 {
     public new void Configure(EntityTypeBuilder<DiscordUser> builder)
     {
+        base.Configure(builder);
+        
         builder
             .Property(entity => entity.DiscordId)
             .IsRequired();

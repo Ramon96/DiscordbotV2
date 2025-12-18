@@ -19,6 +19,9 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        
+        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        
+        
     }
 }
-//  dotnet ef migrations add InitialCreate --project GLaDOS.Infra --startup-project GLaDOS.Scheduler

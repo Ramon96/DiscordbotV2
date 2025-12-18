@@ -1,6 +1,9 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Glados.Discord.Commands;
 using Glados.Discord.Contracts;
+using Glados.Discord.Services;
+using Glados.Discord.Services.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Glados.Discord.ServiceCollection;
@@ -11,13 +14,16 @@ public static class ServiceCollectionExtensions
     {
         var config = new DiscordConfig()
         {
-            
+
         };
 
         var collection = services
             .AddSingleton(config)
             .AddSingleton<DiscordSocketClient>()
             .AddSingleton<IHelloWorld, HelloWorld>()
+            .AddScoped<IDiscordUserService, DiscordUserService>()
+            .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()
+            .AddHostedService<CommandHandlerService>()
             .AddHostedService<HelloWorld>();
 
         return collection;

@@ -2,5 +2,5 @@
 
 public class DiscordUser : Entity
 {
-    public long DiscordId { get; set; }
+    public ulong DiscordId { get; set; }
 }

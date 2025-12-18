@@ -6,6 +6,6 @@ namespace Glados.Discord.Services.Contracts;
 
 public interface IDiscordUserService
 {
-    Task<bool> AddDiscordUserAsync(ulong discordId);
-    Task<DiscordUser?> GetDiscordUserAsync(ulong discordId);
+    Task AddDiscordUserAsync(ulong discordId, CancellationToken cancellationToken = default);
+    Task<DiscordUser?> GetDiscordUserAsync(ulong discordId, CancellationToken cancellationToken = default);
 }
