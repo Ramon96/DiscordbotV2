@@ -4,5 +4,4 @@ namespace GLaDOS.Scheduler.Controllers;
 
 public class DiscordController : ControllerBase
 {
-    
 }

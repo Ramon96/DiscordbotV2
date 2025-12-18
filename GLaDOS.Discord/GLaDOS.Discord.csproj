@@ -18,4 +18,9 @@
         <HintPath>..\..\..\..\..\.dotnet\shared\Microsoft.AspNetCore.App\10.0.0\Microsoft.Extensions.Hosting.Abstractions.dll</HintPath>
       </Reference>
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\GLaDOS.Core\GLaDOS.Core.csproj" />
+      <ProjectReference Include="..\GLaDOS.Infra\GLaDOS.Infra.csproj" />
+    </ItemGroup>
 </Project>

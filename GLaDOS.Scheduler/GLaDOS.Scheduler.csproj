@@ -21,6 +21,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\GLaDOS.Core\GLaDOS.Core.csproj" />
+      <ProjectReference Include="..\GLaDOS.Discord\GLaDOS.Discord.csproj" />
       <ProjectReference Include="..\GLaDOS.Infra\GLaDOS.Infra.csproj" />
       <ProjectReference Include="..\GLaDOS.OldschoolRunescape\GLaDOS.OldschoolRunescape.csproj" />
     </ItemGroup>

@@ -1,5 +1,8 @@
-﻿using GLaDOS.OldschoolRunescape.Clients.Contracts;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace GLaDOS.Scheduler.Controllers;
 
@@ -34,6 +37,6 @@ public class OldschoolRunescapeController : ControllerBase
 
         return Ok(hiscores);
     }
-    
+
     //  Add player
 }

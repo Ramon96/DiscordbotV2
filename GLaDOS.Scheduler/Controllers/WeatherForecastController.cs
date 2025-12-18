@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Glados.Discord.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
