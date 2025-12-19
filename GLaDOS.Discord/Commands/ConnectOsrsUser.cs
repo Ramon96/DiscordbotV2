@@ -33,12 +33,6 @@ public class ConnectOsrsUser : IDiscordCommand
 
     public async Task ExecuteAsync(SocketSlashCommand command, CancellationToken cancellationToken = default)
     {
-        // check if the discord user is registered
-        // if not, register it first (using the AddDiscordUserCommand logic)
-        // check if the osrs user exists by fetching his stats from the hiscores
-        // if not, respond with an error message
-        // if yes, link the osrs user to the discord user in the database
-
         using var scope = _services.CreateScope();
         var discordUserService = scope.ServiceProvider.GetRequiredService<Glados.Discord.Services.Contracts.IDiscordUserService>();
         var osrsClient = scope.ServiceProvider.GetRequiredService<IOldschoolRunescapeClient>();
@@ -58,6 +52,8 @@ public class ConnectOsrsUser : IDiscordCommand
         if (discordUser == null)
         {
             await discordUserService.AddDiscordUserAsync(socketUser.Id, cancellationToken);
+            discordUser = await discordUserService.GetDiscordUserAsync(socketUser.Id, cancellationToken);
+            
         }
 
         var hiscoreData = await osrsClient.GetHiScoresByUsernameAsync(osrsUsername, cancellationToken);
@@ -70,7 +66,7 @@ public class ConnectOsrsUser : IDiscordCommand
 
         var user = repository.GetByExpressionAsync(new OsrsUserWithUsername(osrsUsername), cancellationToken);
 
-        if (user.Result != null)
+        if (user != null)
         {
             await command.RespondAsync($"OSRS user '{osrsUsername}' is already linked to a Discord account.", ephemeral: true);
             return;
@@ -83,9 +79,7 @@ public class ConnectOsrsUser : IDiscordCommand
         };
 
         await repository.SaveChangesAsync(osrsUser, cancellationToken);
-
-        // Note: Stats/bosses will be populated by the scheduled HiscoreJob that runs periodically
-        // Or you can implement a manual trigger via an API endpoint in Scheduler
+        
 
         await command.RespondAsync(
             $"Linked `{osrsUsername}` to <@{socketUser.Id}>.",
