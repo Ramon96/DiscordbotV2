@@ -1,4 +1,5 @@
 using System;
+using Glados.Discord.Services;
 using GLaDOS.Infra.EntityFramework;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Extensions;
@@ -18,6 +19,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddCoreServices(builder.Configuration);
+
 builder.Services.AddTransient<HiscoreCalculator>();
 builder.Services.AddTransient<HiscoreJob>();
 

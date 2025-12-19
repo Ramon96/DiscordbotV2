@@ -1,4 +1,5 @@
-﻿using GLaDOS.Domain.OldschoolRunescape;
+﻿using Glados.Discord.Services;
+using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.EntityFramework;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using GLaDOS.Scheduler.Extensions;
@@ -16,13 +17,15 @@ public class HiscoreJob
     private readonly IOldschoolRunescapeClient _client;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly HiscoreCalculator _calculator;
+    private readonly DiscordNotificationService _notificationService;
 
-    public HiscoreJob(ILogger<HiscoreJob> logger, IOldschoolRunescapeClient client, IServiceScopeFactory scopeFactory, HiscoreCalculator calculator)
+    public HiscoreJob(ILogger<HiscoreJob> logger, IOldschoolRunescapeClient client, IServiceScopeFactory scopeFactory, HiscoreCalculator calculator, DiscordNotificationService notificationService)
     {
         _logger = logger;
         _client = client;
         _scopeFactory = scopeFactory;
         _calculator = calculator;
+        _notificationService = notificationService;
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
@@ -103,6 +106,16 @@ public class HiscoreJob
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
+            
+            try 
+            {
+                await _notificationService.SendHiscoreUpdatesAsync(user, changes);
+                _logger.LogInformation("Discord notifications sent for {Username}", user.Username);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send Discord notification for {Username}", user.Username);
+            }
             
             _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}", 
                 changes.StatChanges.Count, changes.ActivityChanges.Count, user.Username);

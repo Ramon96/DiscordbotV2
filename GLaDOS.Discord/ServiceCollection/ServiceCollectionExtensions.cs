@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton(config)
             .AddSingleton<DiscordSocketClient>()
             .AddSingleton<IHelloWorld, HelloWorld>()
+            .AddSingleton<DiscordNotificationService>()
             .AddScoped<IDiscordUserService, DiscordUserService>()
             .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()
             .AddSingleton<IDiscordCommand, ConnectOsrsUser>()
