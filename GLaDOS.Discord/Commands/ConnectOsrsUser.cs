@@ -64,7 +64,7 @@ public class ConnectOsrsUser : IDiscordCommand
             return;
         }
 
-        var user = repository.GetByExpressionAsync(new OsrsUserWithUsername(osrsUsername), cancellationToken);
+        var user = await repository.GetByExpressionAsync(new OsrsUserWithUsername(osrsUsername), cancellationToken);
 
         if (user != null)
         {

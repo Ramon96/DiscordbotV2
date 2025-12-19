@@ -16,6 +16,71 @@ public class DiscordNotificationService
         _notificationChannelId = configuration.GetValue<ulong>("Discord:OldschoolRunescapeChannelId");
     }
     
+    public async Task SendConsolidatedUpdatesAsync(List<(OldschoolRunescapeUser User, OldschoolRunescapeHiscoreChanges Changes)> allUpdates)
+{
+    var channel = _client.GetChannel(_notificationChannelId) as IMessageChannel;
+    if (channel == null) return;
+
+   
+    var skillGroups = allUpdates
+        .SelectMany(user => user.Changes.StatChanges.Select(stat => new { user.User, Stat = stat }))
+        .GroupBy(userSkills => userSkills.Stat.StatName) 
+        .ToList();
+
+    if (skillGroups.Any())
+    {
+        var embed = new EmbedBuilder()
+            .WithTitle("🌍 OSRS Level Gains Report")
+            .WithDescription("The following players have made progress!")
+            .WithColor(Color.Green)
+            .WithCurrentTimestamp();
+
+        foreach (var group in skillGroups)
+        {
+            string skillText = "";
+            foreach (var userSkills in group)
+            {
+                int diff = userSkills.Stat.NewLevel - userSkills.Stat.OldLevel;
+                skillText += $"**{userSkills.User.Username}**: {userSkills.Stat.OldLevel} → **{userSkills.Stat.NewLevel}** (+{diff})\n";
+            }
+
+            embed.AddField(group.Key, skillText, inline: false);
+        }
+        
+        await channel.SendMessageAsync(embed: embed.Build());
+    }
+    
+    var activityGroups = allUpdates
+        .SelectMany(u => u.Changes.ActivityChanges.Select(act => new { u.User, Activity = act }))
+        .GroupBy(x => x.Activity.ActivityName)
+        .ToList();
+
+    foreach (var group in activityGroups)
+    {
+        // Voor bosses maken we per BOSS een embed (zodat we het plaatje kunnen gebruiken),
+        // maar we zetten wel alle spelers die die boss deden in die ene embed.
+        
+        // var flavor = ActivityFlavorHelper.GetFlavor(group.Key);
+        
+        var embed = new EmbedBuilder()
+            .WithTitle(group.Key) // Bv. "Theatre of Blood"
+            // .WithThumbnailUrl(flavor.ImageUrl)
+            // .WithColor(flavor.Color)
+            .WithCurrentTimestamp();
+
+        string bossText = "";
+        foreach (var entry in group)
+        {
+            // bossText += $"{flavor.Icon} **{entry.User.Username}**: {entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})\n";
+            bossText += $"**{entry.User.Username}**: {entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})\n";
+            
+        }
+        
+        embed.WithDescription(bossText);
+        await channel.SendMessageAsync(embed: embed.Build());
+    }
+}
+    
     public async Task SendHiscoreUpdatesAsync(OldschoolRunescapeUser user, OldschoolRunescapeHiscoreChanges changes)
     {
         var channel = _client.GetChannel(_notificationChannelId) as IMessageChannel;

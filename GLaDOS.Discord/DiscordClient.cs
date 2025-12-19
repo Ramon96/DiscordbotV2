@@ -1,17 +1,16 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Glados.Discord.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace Glados.Discord;
 
-public class HelloWorld : IHelloWorld, IHostedService, IAsyncDisposable
+public class DiscordClient : IHostedService, IAsyncDisposable
 {
     private readonly DiscordSocketClient _client;
     private readonly IConfiguration _configuration;
 
-    public HelloWorld(DiscordSocketClient client, IConfiguration configuration)
+    public DiscordClient(DiscordSocketClient client, IConfiguration configuration)
     {
         _client = client;
         _configuration = configuration;
@@ -20,19 +19,6 @@ public class HelloWorld : IHelloWorld, IHostedService, IAsyncDisposable
             await Task.CompletedTask;
             Console.WriteLine(msg);
         };
-    }
-
-    public async Task SayHelloAsync(CancellationToken cancellationToken = default)
-    {
-        var guild = _client.GetGuild(867074325824012379);
-
-        if (guild == null)
-        {
-            return;
-        }
-
-        var runescapeChannel = guild.TextChannels.FirstOrDefault(channel => channel.Name.Contains("runescape"));
-
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)

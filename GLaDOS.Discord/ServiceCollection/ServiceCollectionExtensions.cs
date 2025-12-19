@@ -20,13 +20,13 @@ public static class ServiceCollectionExtensions
         var collection = services
             .AddSingleton(config)
             .AddSingleton<DiscordSocketClient>()
-            .AddSingleton<IHelloWorld, HelloWorld>()
+            .AddSingleton<DiscordClient>()
             .AddSingleton<DiscordNotificationService>()
             .AddScoped<IDiscordUserService, DiscordUserService>()
             .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()
             .AddSingleton<IDiscordCommand, ConnectOsrsUser>()
             .AddHostedService<CommandHandlerService>()
-            .AddHostedService<HelloWorld>();
+            .AddHostedService<DiscordClient>();
 
         return collection;
     }

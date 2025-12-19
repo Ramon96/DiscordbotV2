@@ -33,6 +33,7 @@ public class HiscoreJob
         _logger.LogInformation("Starting hiscore job");
 
         List<Guid> userIds;
+        var updates = new List<(OldschoolRunescapeUser User, OldschoolRunescapeHiscoreChanges Changes)>();
         
         using (var scope = _scopeFactory.CreateScope())
         {
@@ -107,18 +108,29 @@ public class HiscoreJob
 
             await dbContext.SaveChangesAsync(cancellationToken);
             
-            try 
+            updates.Add((user, changes));
+            
+            if  (!updates.Any())
             {
-                await _notificationService.SendHiscoreUpdatesAsync(user, changes);
-                _logger.LogInformation("Discord notifications sent for {Username}", user.Username);
+                _logger.LogInformation("No updates to process after checking user: {Username}", user.Username);
+                continue;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send Discord notification for {Username}", user.Username);
-            }
+            
+     
             
             _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}", 
                 changes.StatChanges.Count, changes.ActivityChanges.Count, user.Username);
+        }
+        
+        try 
+        {
+            await _notificationService.SendConsolidatedUpdatesAsync(updates);
+            // await _notificationService.SendHiscoreUpdatesAsync(user, changes);
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send Discord notification");
         }
 
         _logger.LogInformation("Completed hiscore job");
