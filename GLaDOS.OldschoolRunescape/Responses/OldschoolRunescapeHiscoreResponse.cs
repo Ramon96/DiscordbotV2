@@ -9,13 +9,13 @@ public class OldschoolRunescapeHiscoreResponse
     public string Name { get; set; }
 
     [JsonPropertyName("skills")]
-    public ICollection<OldschoolRunescapeSkill> Skills { get; set; }
+    public ICollection<OldschoolRunescapeSkillResponse> Skills { get; set; }
 
     [JsonPropertyName("activities")]
-    public ICollection<OldschoolRunescapeActivity> Activities { get; set; }
+    public ICollection<OldschoolRunescapeActivityResponse> Activities { get; set; }
 }
 
-public class OldschoolRunescapeSkill
+public class OldschoolRunescapeSkillResponse
 {
     [JsonPropertyName("id")]
     public uint Id { get; set; }
@@ -33,7 +33,7 @@ public class OldschoolRunescapeSkill
     public ulong Xp { get; set; }
 }
 
-public class OldschoolRunescapeActivity
+public class OldschoolRunescapeActivityResponse
 {
     [JsonPropertyName("id")]
     public uint Id { get; set; }

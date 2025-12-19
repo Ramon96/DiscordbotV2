@@ -1,5 +1,3 @@
-maak audit loggin
-
 ## Why This Project Exists
 
 This project is a personal learning initiative designed to enhance my programming skills across multiple domains:
@@ -99,3 +97,4 @@ This job checks if the hiscores are updated; updates the database and will displ
 ## Fetch osrs wiki
 
 This job checks for diary changes. music unlocks and quest progression. stores it in the database and display the changes.
+```

@@ -1,6 +1,7 @@
 using System;
 using GLaDOS.Infra.EntityFramework;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
+using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
 using Hangfire;
@@ -17,6 +18,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddCoreServices(builder.Configuration);
+builder.Services.AddTransient<HiscoreCalculator>();
 builder.Services.AddTransient<HiscoreJob>();
 
 
