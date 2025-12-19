@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IHelloWorld, HelloWorld>()
             .AddScoped<IDiscordUserService, DiscordUserService>()
             .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()
+            .AddSingleton<IDiscordCommand, ConnectOsrsUser>()
             .AddHostedService<CommandHandlerService>()
             .AddHostedService<HelloWorld>();
 

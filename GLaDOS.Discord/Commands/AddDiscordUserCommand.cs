@@ -25,20 +25,20 @@ public class AddDiscordUserCommand : IDiscordCommand
     {
         var discordUserId = command.User.Id;
         using var scope = _services.CreateScope();
-        var discordUserService = scope.ServiceProvider.GetRequiredService<IDiscordUserService>();
+        var discordUserService = scope.ServiceProvider.GetRequiredService<Glados.Discord.Services.Contracts.IDiscordUserService>();
 
         try
         {
-           var discordUser = await discordUserService.GetDiscordUserAsync(discordUserId, cancellationToken);
-           
-           if (discordUser is not null)
-           {
-               await command.RespondAsync("Your Discord account is already connected to GLaDOS.", ephemeral: true);
+            var discordUser = await discordUserService.GetDiscordUserAsync(discordUserId, cancellationToken);
+
+            if (discordUser is not null)
+            {
+                await command.RespondAsync("Your Discord account is already connected to GLaDOS.", ephemeral: true);
                 return;
-           }
-           
-           await discordUserService.AddDiscordUserAsync(discordUserId, cancellationToken);
-           await command.RespondAsync("Your Discord account has been successfully connected to GLaDOS!", ephemeral: true);
+            }
+
+            await discordUserService.AddDiscordUserAsync(discordUserId, cancellationToken);
+            await command.RespondAsync("Your Discord account has been successfully connected to GLaDOS!", ephemeral: true);
         }
         catch (Exception e)
         {

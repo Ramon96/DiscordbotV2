@@ -1,13 +1,11 @@
 namespace GLaDOS.Domain.OldschoolRunescape;
 
-public class OldschoolRunescapeStat : Entity
+public class OldschoolRunescapeActivity : Entity
 {
     public virtual OldschoolRunescapeUser User { get; init; }
     public Guid OldschoolRunescapeUserId { get; init; }
-    
-    public uint SkillId { get; init; }
+    public uint ActivityId { get; init; }
     public required string Name { get; init; }
     public int Rank { get; set; }
-    public int Level { get; set; }
-    public ulong Experience { get; set; }
+    public int Score { get; set; }
 }

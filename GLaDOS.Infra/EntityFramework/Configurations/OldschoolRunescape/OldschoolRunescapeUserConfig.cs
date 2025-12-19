@@ -8,6 +8,8 @@ public class OldschoolRunescapeUserConfig : EntityConfig<OldschoolRunescapeUser>
 {
     public new void Configure(EntityTypeBuilder<OldschoolRunescapeUser> builder)
     {
+        base.Configure(builder);
+
         builder
             .Property(entity => entity.Username)
             .IsRequired();
@@ -18,12 +20,12 @@ public class OldschoolRunescapeUserConfig : EntityConfig<OldschoolRunescapeUser>
 
         builder.HasMany(user => user.Stats)
             .WithOne(stat => stat.User)
-            .HasForeignKey(stat => stat.Id)
+            .HasForeignKey(stat => stat.OldschoolRunescapeUserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(user => user.Bosses)
-            .WithOne(boss => boss.User)
-            .HasForeignKey(boss => boss.Id)
+        builder.HasMany(user => user.Activities)
+            .WithOne(activity => activity.User)
+            .HasForeignKey(activity => activity.OldschoolRunescapeUserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

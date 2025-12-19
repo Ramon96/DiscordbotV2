@@ -11,8 +11,9 @@ public abstract class EntityConfig<TEntity> : IEntityTypeConfiguration<TEntity> 
         builder
             .Property(entity => entity.Id)
             .HasColumnName("id")
-            .HasDefaultValueSql("gen_random_uuid()");
-        
+            .HasDefaultValueSql("gen_random_uuid()")
+            .ValueGeneratedOnAdd();
+
         builder
             .Property(entity => entity.CreatedDate)
             .HasColumnType("timestamp with time zone")

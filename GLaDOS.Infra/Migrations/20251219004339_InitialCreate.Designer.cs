@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GLaDOS.Infra.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251218191606_configfromassembly")]
-    partial class configfromassembly
+    [Migration("20251219004339_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,7 +40,8 @@ namespace GLaDOS.Infra.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<decimal>("DiscordId")
-                        .HasColumnType("numeric(20,0)");
+                        .HasColumnType("numeric(20,0)")
+                        .HasColumnName("discord_id");
 
                     b.Property<DateTime>("ModifiedDate")
                         .ValueGeneratedOnAdd()
@@ -53,75 +54,88 @@ namespace GLaDOS.Infra.Migrations
                     b.HasIndex("DiscordId")
                         .IsUnique();
 
-                    b.ToTable("DiscordUsers");
+                    b.ToTable("DiscordUsers", (string)null);
                 });
 
-            modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeBoss", b =>
+            modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeActivity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<int>("BossId")
-                        .HasColumnType("integer");
+                    b.Property<long>("ActivityId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime>("ModifiedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
-                    b.Property<long>("Rank")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("RunescapeUserId")
+                    b.Property<Guid>("OldschoolRunescapeUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Score")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Id")
-                        .IsUnique();
-
-                    b.ToTable("OldschoolRunescapeBosses");
+                    b.ToTable("OldschoolRunescapeActivities");
                 });
 
             modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeStat", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<long>("Experience")
-                        .HasColumnType("bigint");
+                    b.Property<decimal>("Experience")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<int>("Level")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("ModifiedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
-                    b.Property<long>("Rank")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("RunescapeUserId")
+                    b.Property<Guid>("OldschoolRunescapeUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("SkillId")
+                    b.Property<int>("Rank")
                         .HasColumnType("integer");
+
+                    b.Property<long>("SkillId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -132,13 +146,24 @@ namespace GLaDOS.Infra.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<Guid?>("DiscordUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("ModifiedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("modified")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -146,16 +171,18 @@ namespace GLaDOS.Infra.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DiscordUserId");
+
                     b.HasIndex("Username")
                         .IsUnique();
 
                     b.ToTable("OldschoolRunescapeUsers");
                 });
 
-            modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeBoss", b =>
+            modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeActivity", b =>
                 {
                     b.HasOne("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeUser", "User")
-                        .WithMany("Bosses")
+                        .WithMany("Activities")
                         .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -176,7 +203,22 @@ namespace GLaDOS.Infra.Migrations
 
             modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeUser", b =>
                 {
-                    b.Navigation("Bosses");
+                    b.HasOne("GLaDOS.Domain.Discord.DiscordUser", "DiscordUser")
+                        .WithMany("OldschoolRunescapeUsers")
+                        .HasForeignKey("DiscordUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("DiscordUser");
+                });
+
+            modelBuilder.Entity("GLaDOS.Domain.Discord.DiscordUser", b =>
+                {
+                    b.Navigation("OldschoolRunescapeUsers");
+                });
+
+            modelBuilder.Entity("GLaDOS.Domain.OldschoolRunescape.OldschoolRunescapeUser", b =>
+                {
+                    b.Navigation("Activities");
 
                     b.Navigation("Stats");
                 });

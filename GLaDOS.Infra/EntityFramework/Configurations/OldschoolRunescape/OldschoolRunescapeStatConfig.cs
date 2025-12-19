@@ -4,12 +4,17 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GLaDOS.Infra.EntityFramework.Configurations.OldschoolRunescape;
 
-public class OldschoolRunescapeStatConfig : IEntityTypeConfiguration<OldschoolRunescapeStat>
+public class OldschoolRunescapeStatConfig : EntityConfig<OldschoolRunescapeStat>
 {
-    public void Configure(EntityTypeBuilder<OldschoolRunescapeStat> builder)
+    public new void Configure(EntityTypeBuilder<OldschoolRunescapeStat> builder)
     {
-        builder.HasKey(stat => stat.Id);
+        base.Configure(builder);
 
+        builder.HasKey(stat => stat.Id);
+        
+        builder.HasIndex(stat => stat.Id)
+            .IsUnique();
+        
         builder.Property(stat => stat.Name)
             .IsRequired()
             .HasMaxLength(50);
@@ -22,10 +27,13 @@ public class OldschoolRunescapeStatConfig : IEntityTypeConfiguration<OldschoolRu
 
         builder.Property(stat => stat.Rank)
             .IsRequired();
+        
+        builder.Property(stat => stat.SkillId)
+            .IsRequired();
 
-        builder.HasOne<OldschoolRunescapeUser>()
+        builder.HasOne<OldschoolRunescapeUser>(stat => stat.User)
             .WithMany(user => user.Stats)
-            .HasForeignKey(stat => stat.RunescapeUserId)
+            .HasForeignKey(stat => stat.OldschoolRunescapeUserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

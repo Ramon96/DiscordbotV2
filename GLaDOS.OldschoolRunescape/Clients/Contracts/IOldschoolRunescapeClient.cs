@@ -4,5 +4,5 @@ namespace GLaDOS.OldschoolRunescape.Clients.Contracts;
 
 public interface IOldschoolRunescapeClient
 {
-    Task<OldschoolRunescapeHiscoreResponse> GetHiScoresByUsernameAsync(string username);
+    Task<OldschoolRunescapeHiscoreResponse> GetHiScoresByUsernameAsync(string username, CancellationToken cancellationToken = default);
 }

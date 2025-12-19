@@ -20,6 +20,11 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
         return await _context.Set<TEntity>().ToListAsync(cancellationToken);
     }
 
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<TEntity> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await _context.Set<TEntity>().FindAsync([id], cancellationToken);
@@ -38,7 +43,7 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 
         var query = _context.Set<TEntity>().AsQueryable();
         query = specification.Apply(query);
-        
+
         return await query.FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -50,9 +55,9 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
     public async Task<TEntity> SaveChangesAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        
-        entity.ModifiedDate = DateTime.Now;
-   
+
+        entity.ModifiedDate = DateTime.UtcNow;
+
         await _context.Set<TEntity>().AddAsync(entity, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 

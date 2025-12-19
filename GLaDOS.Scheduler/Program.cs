@@ -1,5 +1,6 @@
 using System;
 using GLaDOS.Infra.EntityFramework;
+using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
 using Hangfire;
@@ -16,7 +17,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddCoreServices(builder.Configuration);
-
+builder.Services.AddTransient<HiscoreJob>();
 
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -44,5 +45,14 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHangfireDashboard();
+
+// Register recurring job - runs every hour
+RecurringJob.AddOrUpdate<HiscoreJob>(
+    "sync-hiscores",
+    job => job.ExecuteAsync(default),
+    Cron.Hourly);
+
+// For testing, you can trigger manually via Hangfire dashboard at /hangfire
+// or use: BackgroundJob.Enqueue<HiscoreJob>(job => job.ExecuteAsync(default));
 
 app.Run();
