@@ -1,0 +1,31 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ["GLaDOS.Discord/GLaDOS.Discord.csproj", "GLaDOS.Discord/"]
+COPY ["GLaDOS.Scheduler/GLaDOS.Scheduler.csproj", "GLaDOS.Scheduler/"]
+COPY ["GLaDOS.Core/GLaDOS.Core.csproj", "GLaDOS.Core/"]
+COPY ["GLaDOS.Infra/GLaDOS.Infra.csproj", "GLaDOS.Infra/"]
+COPY ["GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj", "GLaDOS.OldschoolRunescape/"]
+
+RUN dotnet restore "GLaDOS.Discord/GLaDOS.Discord.csproj"
+RUN dotnet restore "GLaDOS.Scheduler/GLaDOS.Scheduler.csproj"
+
+COPY . .
+
+FROM build AS publish-discord
+WORKDIR "/src/GLaDOS.Discord"
+RUN dotnet publish "GLaDOS.Discord.csproj" -c Release -o /app/publish/discord
+
+FROM build AS publish-scheduler
+WORKDIR "/src/GLaDOS.Scheduler"
+RUN dotnet publish "GLaDOS.Scheduler.csproj" -c Release -o /app/publish/scheduler
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final-discord
+WORKDIR /app
+COPY --from=publish-discord /app/publish/discord .
+ENTRYPOINT ["dotnet", "GLaDOS.Discord.dll"]
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final-scheduler
+WORKDIR /app
+COPY --from=publish-scheduler /app/publish/scheduler .
+ENTRYPOINT ["dotnet", "GLaDOS.Scheduler.dll"]

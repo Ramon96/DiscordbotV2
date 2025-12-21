@@ -48,8 +48,8 @@ public class DiscordNotificationService
                 }
 
                 embed.AddField(group.Key, skillText, inline: false);
-                await channel.SendMessageAsync(embed: embed.Build());
             }
+            await channel.SendMessageAsync(embed: embed.Build());
         }
 
         var activityGroups = allUpdates

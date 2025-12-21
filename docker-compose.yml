@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:16
@@ -13,6 +11,27 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - glados_network
+
+  glados_scheduler:
+    image: glados-scheduler:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final-scheduler
+    container_name: glados_scheduler
+    depends_on:
+      - postgres
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=glados_db;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - Discord__Token=${DISCORD_TOKEN}
+    restart: unless-stopped
+    networks:
+      - glados_network
 
 volumes:
   pgdata:
+
+networks:
+  glados_network:

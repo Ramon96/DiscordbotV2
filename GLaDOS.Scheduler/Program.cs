@@ -50,13 +50,10 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHangfireDashboard();
 
-// Register recurring job - runs every hour
 RecurringJob.AddOrUpdate<HiscoreJob>(
     "sync-hiscores",
-    job => job.ExecuteAsync(default),
+    job => job.ExecuteAsync(CancellationToken.None),
     Cron.Hourly);
 
-// For testing, you can trigger manually via Hangfire dashboard at /hangfire
-// or use: BackgroundJob.Enqueue<HiscoreJob>(job => job.ExecuteAsync(default));
 
 app.Run();
