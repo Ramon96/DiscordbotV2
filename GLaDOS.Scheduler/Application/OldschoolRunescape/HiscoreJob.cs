@@ -125,8 +125,6 @@ public class HiscoreJob
         try 
         {
             await _notificationService.SendConsolidatedUpdatesAsync(updates);
-            // await _notificationService.SendHiscoreUpdatesAsync(user, changes);
-
         }
         catch (Exception ex)
         {
