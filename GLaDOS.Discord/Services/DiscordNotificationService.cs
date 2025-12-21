@@ -30,21 +30,21 @@ public class DiscordNotificationService
 
         if (skillGroups.Any())
         {
+            var embed = new EmbedBuilder()
+                .WithTitle("Skill Progress")
+                .WithDescription("The following players have made progress!")
+                .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Skills_icon.png")
+                .WithColor(Color.DarkRed)
+                .WithCurrentTimestamp();
+            
             foreach (var group in skillGroups)
             {
-                var embed = new EmbedBuilder()
-                    .WithTitle(group.Key)
-                    .WithDescription("The following players have made progress!")
-                    .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Skills_icon.png")
-                    .WithColor(Color.DarkRed)
-                    .WithCurrentTimestamp();
-
                 string skillText = "";
                 foreach (var userSkills in group)
                 {
                     var diff = userSkills.Stat.NewLevel - userSkills.Stat.OldLevel;
                     skillText +=
-                        $"**{userSkills.User.Username}**: {userSkills.Stat.OldLevel} → **{userSkills.Stat.NewLevel}** (+{diff})\n";
+                        $"**{formatUsername(userSkills.User.Username)}**: {userSkills.Stat.OldLevel} → **{userSkills.Stat.NewLevel}** (+{diff})\n";
                 }
 
                 embed.AddField(group.Key, skillText, inline: false);
@@ -73,12 +73,19 @@ public class DiscordNotificationService
                 {
                     // bossText += $"{flavor.Icon} **{entry.User.Username}**: {entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})\n";
                     bossText +=
-                        $"**{entry.User.Username}**: {entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})\n";
+                        $"**{formatUsername(entry.User.Username)}**: {entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})\n";
                 }
 
                 embed.WithDescription(bossText);
                 await channel.SendMessageAsync(embed: embed.Build());
             }
         }
+    }
+    
+    private string formatUsername(string username)
+    {
+        if (string.IsNullOrEmpty(username)) return username;
+        var formatted = char.ToUpper(username[0]) + username.Substring(1).Replace("_", " ");
+        return formatted;
     }
 }

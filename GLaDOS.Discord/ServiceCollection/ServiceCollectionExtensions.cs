@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Glados.Discord.Commands;
-using Glados.Discord.Contracts;
 using Glados.Discord.Services;
 using Glados.Discord.Services.Contracts;
 using Microsoft.Extensions.DependencyInjection;

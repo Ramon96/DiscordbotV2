@@ -1,1 +1,0 @@
-﻿namespace Glados.Discord.Contracts;

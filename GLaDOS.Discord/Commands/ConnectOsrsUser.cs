@@ -1,9 +1,10 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Glados.Discord.Services.Contracts;
 using GLaDOS.Domain.OldschoolRunescape;
+using GLaDOS.Infra.Repositories.Contracts;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using GLaDOS.OldschoolRunescape.Specifications;
-using Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -12,12 +13,10 @@ namespace Glados.Discord.Commands;
 public class ConnectOsrsUser : IDiscordCommand
 {
     private readonly IServiceProvider _services;
-    private readonly ILogger<ConnectOsrsUser>? _logger;
 
-    public ConnectOsrsUser(IServiceProvider services, ILogger<ConnectOsrsUser>? logger = null)
+    public ConnectOsrsUser(IServiceProvider services)
     {
         _services = services;
-        _logger = logger;
     }
 
     public string Name => "link-osrs-to-discord";
@@ -34,9 +33,9 @@ public class ConnectOsrsUser : IDiscordCommand
     public async Task ExecuteAsync(SocketSlashCommand command, CancellationToken cancellationToken = default)
     {
         using var scope = _services.CreateScope();
-        var discordUserService = scope.ServiceProvider.GetRequiredService<Glados.Discord.Services.Contracts.IDiscordUserService>();
+        var discordUserService = scope.ServiceProvider.GetRequiredService<IDiscordUserService>();
         var osrsClient = scope.ServiceProvider.GetRequiredService<IOldschoolRunescapeClient>();
-        var repository = scope.ServiceProvider.GetRequiredService<GLaDOS.Infra.Repositories.Contracts.IRepository<OldschoolRunescapeUser>>();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<OldschoolRunescapeUser>>();
 
         var socketUser = command.Data.Options.FirstOrDefault(x => x.Name == "discord-user").Value as SocketUser;
         var osrsUsername = command.Data.Options.FirstOrDefault(x => x.Name == "osrs-username").Value as string;
@@ -46,6 +45,8 @@ public class ConnectOsrsUser : IDiscordCommand
             await command.RespondAsync("Invalid command usage. Please provide both OSRS username and Discord user.", ephemeral: true);
             return;
         }
+        
+        osrsUsername = osrsUsername.ToLower().Replace(" ", "_");
 
         var discordUser = await discordUserService.GetDiscordUserAsync(socketUser.Id, cancellationToken);
 
