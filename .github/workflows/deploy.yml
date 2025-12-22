@@ -18,8 +18,10 @@ jobs:
           script: |
             cd /root/DiscordbotV2
 
+            git fetch --all
+            git reset --hard origin/main
+
             git pull
 
             docker-compose up --build -d
-
             docker image prune -f
