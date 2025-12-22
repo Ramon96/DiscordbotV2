@@ -31,7 +31,6 @@ public class DiscordClient : IDiscordClient, IHostedService, IAsyncDisposable
         }
 
         await _client.LoginAsync(TokenType.Bot, token);
-
         await _client.StartAsync();
     }
 
