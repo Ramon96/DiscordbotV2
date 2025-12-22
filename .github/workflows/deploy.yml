@@ -28,17 +28,16 @@ jobs:
 
             git fetch --all
             git reset --hard origin/main
-
             git pull
 
             rm -f .env
 
-            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-            echo "DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}"
-            echo "DISCORD_GUILD_ID=${{ secrets.DISCORD_GUILD_ID }}"
-            echo "DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID=${{ secrets.DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID }}"
-            echo "HANGFIRE_USERNAME=${{ secrets.HANGFIRE_USERNAME }}"
-            echo "HANGFIRE_PASSWORD=${{ secrets.HANGFIRE_PASSWORD }}"
+            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > .env
+            echo "DISCORD_TOKEN=$DISCORD_TOKEN" >> .env
+            echo "DISCORD_GUILD_ID=$DISCORD_GUILD_ID" >> .env
+            echo "DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID=$DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID" >> .env
+            echo "HANGFIRE_USERNAME=$HANGFIRE_USERNAME" >> .env
+            echo "HANGFIRE_PASSWORD=$HANGFIRE_PASSWORD" >> .env
 
             docker-compose up --build -d
             docker image prune -f
