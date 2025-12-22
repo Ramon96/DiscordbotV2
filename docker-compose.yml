@@ -27,7 +27,7 @@ services:
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=glados_db;Username=postgres;Password=${POSTGRES_PASSWORD}
       - Discord__Token=${DISCORD_TOKEN}
     ports:
-      - "8080:80"
+      - "8080:8080"
     restart: unless-stopped
     networks:
       - glados_network
