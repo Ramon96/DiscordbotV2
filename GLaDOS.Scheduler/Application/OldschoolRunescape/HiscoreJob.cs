@@ -2,6 +2,7 @@
 using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.EntityFramework;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
+using GLaDOS.OldschoolRunescape.Requests;
 using GLaDOS.Scheduler.Extensions;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +35,7 @@ public class HiscoreJob
 
         List<Guid> userIds;
         var updates = new List<(OldschoolRunescapeUser User, OldschoolRunescapeHiscoreChanges Changes)>();
-        
+
         using (var scope = _scopeFactory.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -45,10 +46,10 @@ public class HiscoreJob
 
         foreach (var userId in userIds)
         {
-            
+
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            
+
             var user = await dbContext.Set<OldschoolRunescapeUser>()
                 .Include(user => user.Stats)
                 .Include(user => user.Activities)
@@ -61,30 +62,30 @@ public class HiscoreJob
 
             _logger.LogInformation("Fetching hiscores for user: {Username}", user.Username);
 
-            var freshData = await _client.GetHiScoresByUsernameAsync(user.Username, cancellationToken);
-            
+            var freshData = await _client.GetHiScoresByUsernameAsync(new OldschoolRunescapeHiscoreRequest { Username = user.Username }, cancellationToken);
+
             if (freshData == null)
             {
                 _logger.LogWarning("User '{Username}' not found in hiscores.", user.Username);
                 continue;
             }
-            
+
             if (user.Stats == null || !user.Stats.Any() || user.Activities == null || !user.Activities.Any())
             {
                 _logger.LogWarning("User '{Username}' has null Stats or Activities collections.", user.Username);
-                
+
                 var newStats = freshData.Skills.Select(s => s.ToEntity(user.Id));
                 var newActivities = freshData.Activities.Select(a => a.ToEntity(user.Id));
-                
+
                 dbContext.Set<OldschoolRunescapeStat>().AddRange(newStats);
                 dbContext.Set<OldschoolRunescapeActivity>().AddRange(newActivities);
-                
+
                 await dbContext.SaveChangesAsync(cancellationToken);
                 continue;
             }
-            
+
             var changes = _calculator.CalculateUpdates(user, freshData);
-            
+
             if (!changes.HasChanges)
             {
                 _logger.LogInformation("No changes detected for user: {Username}", user.Username);
@@ -108,18 +109,18 @@ public class HiscoreJob
 
             await dbContext.SaveChangesAsync(cancellationToken);
             updates.Add((user, changes));
-            
-            if  (!updates.Any())
+
+            if (!updates.Any())
             {
                 _logger.LogInformation("No updates to process after checking user: {Username}", user.Username);
                 continue;
             }
-            
-            _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}", 
+
+            _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}",
                 changes.StatChanges.Count, changes.ActivityChanges.Count, user.Username);
         }
-        
-        try 
+
+        try
         {
             await _notificationService.SendConsolidatedUpdatesAsync(updates);
         }

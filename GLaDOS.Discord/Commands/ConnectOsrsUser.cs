@@ -4,6 +4,7 @@ using Glados.Discord.Services.Contracts;
 using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.Repositories.Contracts;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
+using GLaDOS.OldschoolRunescape.Requests;
 using GLaDOS.OldschoolRunescape.Specifications;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -44,7 +45,7 @@ public class ConnectOsrsUser : IDiscordCommand
             await command.RespondAsync("Invalid command usage. Please provide both OSRS username and Discord user.", ephemeral: true);
             return;
         }
-        
+
         var discordUser = await discordUserService.GetDiscordUserAsync(socketUser.Id, cancellationToken);
 
         if (discordUser == null)
@@ -53,7 +54,7 @@ public class ConnectOsrsUser : IDiscordCommand
             discordUser = await discordUserService.GetDiscordUserAsync(socketUser.Id, cancellationToken);
         }
 
-        var hiscoreData = await osrsClient.GetHiScoresByUsernameAsync(osrsUsername, cancellationToken);
+        var hiscoreData = await osrsClient.GetHiScoresByUsernameAsync(new OldschoolRunescapeHiscoreRequest { Username = osrsUsername }, cancellationToken);
 
         if (hiscoreData == null)
         {
@@ -68,7 +69,7 @@ public class ConnectOsrsUser : IDiscordCommand
             await command.RespondAsync($"OSRS user '{osrsUsername}' is already linked to a Discord account.", ephemeral: true);
             return;
         }
-        
+
         var cleanUsername = osrsUsername.ToLower();
         cleanUsername = char.ToUpper(cleanUsername[0]) + cleanUsername.Substring(1);
 
@@ -79,7 +80,7 @@ public class ConnectOsrsUser : IDiscordCommand
         };
 
         await repository.SaveChangesAsync(osrsUser, cancellationToken);
-        
+
         await command.RespondAsync(
             $"Linked `{osrsUsername}` to <@{socketUser.Id}>.",
             ephemeral: false);

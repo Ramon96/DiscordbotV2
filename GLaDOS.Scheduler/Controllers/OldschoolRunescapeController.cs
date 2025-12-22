@@ -1,8 +1,7 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using GLaDOS.OldschoolRunescape.Clients.Contracts;
+﻿using GLaDOS.OldschoolRunescape.Clients.Contracts;
+using GLaDOS.OldschoolRunescape.Requests;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+
 
 namespace GLaDOS.Scheduler.Controllers;
 
@@ -26,7 +25,7 @@ public class OldschoolRunescapeController : ControllerBase
             return BadRequest("Username cannot be empty.");
         }
 
-        var hiscores = await _client.GetHiScoresByUsernameAsync(username, cancellationToken);
+        var hiscores = await _client.GetHiScoresByUsernameAsync(new OldschoolRunescapeHiscoreRequest { Username = username }, cancellationToken);
 
         if (hiscores == null)
         {
