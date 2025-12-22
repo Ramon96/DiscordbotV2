@@ -45,18 +45,11 @@ public class NameChangeOsrsUser : IDiscordCommand
             await command.RespondAsync("Invalid command usage. Please provide both old and new OSRS usernames.", ephemeral: true);
             return;
         }
-        
-        var discordUser = await discordUserService.GetDiscordUserAsync(command.User.Id, cancellationToken);
-        if (discordUser == null)
-        {
-            await command.RespondAsync("You have no linked osrs accounts", ephemeral: true);
-            return;
-        }
 
         var osrsUserSpec = new OsrsUserWithUsername(oldOsrsUsername);
         var osrsUser = await repository.GetByExpressionAsync(osrsUserSpec, cancellationToken);
         
-        if (osrsUser == null || osrsUser.DiscordUserId != discordUser.Id)
+        if (osrsUser == null)
         {
             await command.RespondAsync($"no Osrs account foud with username {oldOsrsUsername}", ephemeral: true);
             return;
