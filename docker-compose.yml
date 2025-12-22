@@ -26,6 +26,10 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=glados_db;Username=postgres;Password=${POSTGRES_PASSWORD}
       - Discord__Token=${DISCORD_TOKEN}
+      - Discord__GuildId=${DISCORD_GUILD_ID}
+      - Discord__OldschoolRunescapeChannelId={DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID}
+      - Hangfire__Username=${HANGFIRE_USERNAME}
+      - Hangfire__Password=${HANGFIRE_PASSWORD}
     ports:
       - "8080:8080"
     restart: unless-stopped
