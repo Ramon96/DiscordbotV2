@@ -46,8 +46,8 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
         Authorization = new[]
         {
             new HangfireAuthorizationFilter(
-                builder.Configuration["Hangfire.Username"], 
-                builder.Configuration["Hangfire.Password"]
+                builder.Configuration["Hangfire:Username"], 
+                builder.Configuration["Hangfire:Password"]
             )
         }
     }
