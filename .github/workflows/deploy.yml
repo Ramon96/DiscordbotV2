@@ -10,10 +10,18 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID: ${{ secrets.DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID }}
+          HANGFIRE_USERNAME: ${{ secrets.HANGFIRE_USERNAME }}
+          HANGFIRE_PASSWORD: ${{ secrets.HANGFIRE_PASSWORD }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
+          envs: POSTGRES_PASSWORD,DISCORD_TOKEN,DISCORD_GUILD_ID,DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID,HANGFIRE_USERNAME,HANGFIRE_PASSWORD
           port: 22
           script: |
             cd /root/DiscordbotV2
