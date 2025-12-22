@@ -20,7 +20,7 @@ public class OldschoolRunescapeClient : IOldschoolRunescapeClient
 
         try
         {
-            var username = request.Username ?? string.Empty;
+            var username = request.Username;
             var formattedUsername = username.ToLower().Replace(' ', '_');
 
             var url = $"https://secure.runescape.com/m=hiscore_oldschool/index_lite.json?player={Uri.EscapeDataString(formattedUsername)}";
