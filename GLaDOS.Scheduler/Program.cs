@@ -55,5 +55,5 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
 RecurringJob.AddOrUpdate<HiscoreJob>(
     "sync-hiscores",
     job => job.ExecuteAsync(CancellationToken.None),
-    Cron.Hourly);
+    Cron.MinuteInterval(5));
 app.Run();
