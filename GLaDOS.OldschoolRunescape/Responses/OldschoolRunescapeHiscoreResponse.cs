@@ -30,7 +30,7 @@ public class OldschoolRunescapeSkillResponse
     public int Level { get; set; }
 
     [JsonPropertyName("xp")]
-    public ulong Xp { get; set; }
+    public long Xp { get; set; }
 }
 
 public class OldschoolRunescapeActivityResponse

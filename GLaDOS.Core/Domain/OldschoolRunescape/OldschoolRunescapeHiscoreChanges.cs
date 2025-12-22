@@ -12,8 +12,8 @@ public class StatChange
     public required string StatName { get; set; }
     public int OldLevel { get; set; }
     public int NewLevel { get; set; }
-    public ulong OldExperience { get; set; }
-    public ulong NewExperience { get; set; }
+    public long OldExperience { get; set; }
+    public long NewExperience { get; set; }
     public int OldRank { get; set; }
     public int NewRank { get; set; }
 }

@@ -9,5 +9,5 @@ public class OldschoolRunescapeStat : Entity
     public required string Name { get; init; }
     public int Rank { get; set; }
     public int Level { get; set; }
-    public ulong Experience { get; set; }
+    public long Experience { get; set; }
 }
