@@ -23,5 +23,14 @@ jobs:
 
             git pull
 
+            rm -f .env
+
+            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+            echo "DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}"
+            echo "DISCORD_GUILD_ID=${{ secrets.DISCORD_GUILD_ID }}"
+            echo "DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID=${{ secrets.DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID }}"
+            echo "HANGFIRE_USERNAME=${{ secrets.HANGFIRE_USERNAME }}"
+            echo "HANGFIRE_PASSWORD=${{ secrets.HANGFIRE_PASSWORD }}"
+
             docker-compose up --build -d
             docker image prune -f
