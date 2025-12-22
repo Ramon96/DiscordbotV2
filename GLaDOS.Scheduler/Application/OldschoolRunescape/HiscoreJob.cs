@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GLaDOS.Scheduler.Application.OldschoolRunescape;
 
-[DisableConcurrentExecution(60 * 5)] // 30 minutes
+[DisableConcurrentExecution(60 * 10)] 
 [AutomaticRetry(Attempts = 1)]
 public class HiscoreJob
 {
