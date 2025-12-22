@@ -7,6 +7,7 @@ using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
 using Hangfire;
+using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,10 +49,25 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHangfireDashboard("/hangfire", new DashboardOptions
     {
-        Authorization = new[] { new HangfireAuthorizationFilter() }
+        Authorization = new[]
+        {
+            new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
+            {
+                RequireSsl = false,
+                SslRedirect = false,
+                LoginCaseSensitive = true,
+                Users = new[]
+                {
+                    new BasicAuthAuthorizationUser
+                    {
+                        Login = builder.Configuration["Hangfire:User"],
+                        PasswordClear = builder.Configuration["Hangfire:Password"]
+                    }
+                }
+            })
+        }
     }
-    );
-
+);
 RecurringJob.AddOrUpdate<HiscoreJob>(
     "sync-hiscores",
     job => job.ExecuteAsync(CancellationToken.None),
