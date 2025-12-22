@@ -79,7 +79,7 @@ public class ConnectOsrsUser : IDiscordCommand
             DiscordUserId = discordUser.Id,
         };
 
-        await repository.SaveChangesAsync(osrsUser, cancellationToken);
+        await repository.AddAsync(osrsUser, cancellationToken);
 
         await command.RespondAsync(
             $"Linked `{osrsUsername}` to <@{socketUser.Id}>.",

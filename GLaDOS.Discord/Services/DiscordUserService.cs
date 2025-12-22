@@ -28,7 +28,7 @@ public class DiscordUserService : IDiscordUserService
             DiscordId = discordId
         };
 
-        await _repository.SaveChangesAsync(discordUser, cancellationToken);
+        await _repository.AddAsync(discordUser, cancellationToken);
     }
 
     public async Task<DiscordUser?> GetDiscordUserAsync(ulong discordId, CancellationToken cancellationToken)

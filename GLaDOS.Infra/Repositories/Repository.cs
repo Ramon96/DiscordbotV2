@@ -19,12 +19,7 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
     {
         return await _context.Set<TEntity>().ToListAsync(cancellationToken);
     }
-
-    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        await _context.SaveChangesAsync(cancellationToken);
-    }
-
+    
     public async Task<TEntity> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await _context.Set<TEntity>().FindAsync([id], cancellationToken);
@@ -36,7 +31,7 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 
         return entity;
     }
-
+    
     public async Task<TEntity?> GetByExpressionAsync(ISpecificationBase<TEntity> specification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(specification);
@@ -46,21 +41,35 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : Entity
 
         return await query.FirstOrDefaultAsync(cancellationToken);
     }
-
-    public Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<TEntity> SaveChangesAsync(TEntity entity, CancellationToken cancellationToken = default)
+    
+    public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
-
-        entity.ModifiedDate = DateTime.UtcNow;
-
+        entity.ModifiedDate = DateTime.UtcNow; 
+        
         await _context.Set<TEntity>().AddAsync(entity, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
-
         return entity;
+    }
+    
+    public async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        entity.ModifiedDate = DateTime.UtcNow;
+        
+        _context.Update(entity); 
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+    
+    public async Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        _context.Set<TEntity>().Remove(entity);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }
