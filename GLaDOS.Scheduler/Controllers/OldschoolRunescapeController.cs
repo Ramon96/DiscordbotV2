@@ -10,25 +10,23 @@ namespace GLaDOS.Scheduler.Controllers;
 [Route("[controller]")]
 public class OldschoolRunescapeController : ControllerBase
 {
-    private readonly ILogger<OldschoolRunescapeController> _logger;
     private readonly IOldschoolRunescapeClient _client;
-    public OldschoolRunescapeController(ILogger<OldschoolRunescapeController> logger, IOldschoolRunescapeClient client)
+    public OldschoolRunescapeController(IOldschoolRunescapeClient client)
     {
-        _logger = logger;
         _client = client;
     }
 
     [HttpGet("User")]
     [ProducesResponseType(200)]
     [ProducesResponseType(400)]
-    public async Task<IActionResult> GetUserAsync([FromQuery] string username, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetUserAsync([FromQuery] string username, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(username))
         {
             return BadRequest("Username cannot be empty.");
         }
 
-        var hiscores = await _client.GetHiScoresByUsernameAsync(username);
+        var hiscores = await _client.GetHiScoresByUsernameAsync(username, cancellationToken);
 
         if (hiscores == null)
         {
@@ -37,6 +35,4 @@ public class OldschoolRunescapeController : ControllerBase
 
         return Ok(hiscores);
     }
-
-    //  Add player
 }

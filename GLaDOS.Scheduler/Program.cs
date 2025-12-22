@@ -6,7 +6,6 @@ using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
 using Hangfire;
-using Hangfire.Dashboard;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +35,6 @@ app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
@@ -53,11 +51,9 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
         }
     }
 );
+
 RecurringJob.AddOrUpdate<HiscoreJob>(
     "sync-hiscores",
     job => job.ExecuteAsync(CancellationToken.None),
     Cron.Hourly);
-
-
-
 app.Run();

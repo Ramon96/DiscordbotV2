@@ -1,31 +1,25 @@
 using Discord;
 using Discord.WebSocket;
 using Glados.Discord.Services.Contracts;
-using GLaDOS.Infra.EntityFramework;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Glados.Discord.Commands;
 
 public class AddDiscordUserCommand : IDiscordCommand
 {
     public string Name => "connect";
-    private readonly DiscordSocketClient _client;
     private readonly IServiceProvider _services;
-    private readonly ILogger<AddDiscordUserCommand> _logger;
 
-    public AddDiscordUserCommand(DiscordSocketClient client, IServiceProvider services, ILogger<AddDiscordUserCommand> logger)
+    public AddDiscordUserCommand(IServiceProvider services)
     {
-        _client = client;
         _services = services;
-        _logger = logger;
     }
 
     public async Task ExecuteAsync(SocketSlashCommand command, CancellationToken cancellationToken = default)
     {
         var discordUserId = command.User.Id;
         using var scope = _services.CreateScope();
-        var discordUserService = scope.ServiceProvider.GetRequiredService<Glados.Discord.Services.Contracts.IDiscordUserService>();
+        var discordUserService = scope.ServiceProvider.GetRequiredService<IDiscordUserService>();
 
         try
         {

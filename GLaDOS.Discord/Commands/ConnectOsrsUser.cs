@@ -6,7 +6,6 @@ using GLaDOS.Infra.Repositories.Contracts;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using GLaDOS.OldschoolRunescape.Specifications;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Glados.Discord.Commands;
 
@@ -46,15 +45,12 @@ public class ConnectOsrsUser : IDiscordCommand
             return;
         }
         
-        osrsUsername = osrsUsername.ToLower().Replace(" ", "_");
-
         var discordUser = await discordUserService.GetDiscordUserAsync(socketUser.Id, cancellationToken);
 
         if (discordUser == null)
         {
             await discordUserService.AddDiscordUserAsync(socketUser.Id, cancellationToken);
             discordUser = await discordUserService.GetDiscordUserAsync(socketUser.Id, cancellationToken);
-            
         }
 
         var hiscoreData = await osrsClient.GetHiScoresByUsernameAsync(osrsUsername, cancellationToken);
@@ -81,7 +77,6 @@ public class ConnectOsrsUser : IDiscordCommand
 
         await repository.SaveChangesAsync(osrsUser, cancellationToken);
         
-
         await command.RespondAsync(
             $"Linked `{osrsUsername}` to <@{socketUser.Id}>.",
             ephemeral: false);

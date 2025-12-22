@@ -2,10 +2,11 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using IDiscordClient = Glados.Discord.Contracts.IDiscordClient;
 
 namespace Glados.Discord;
 
-public class DiscordClient : IHostedService, IAsyncDisposable
+public class DiscordClient : IDiscordClient, IHostedService, IAsyncDisposable
 {
     private readonly DiscordSocketClient _client;
     private readonly IConfiguration _configuration;
@@ -44,5 +45,18 @@ public class DiscordClient : IHostedService, IAsyncDisposable
     {
         await _client.StopAsync();
         await _client.LogoutAsync();
+    }
+
+    public Task Speak(string message, ulong? channelId, bool tts, CancellationToken cancellationToken = default)
+    {
+        var channel = channelId ?? 867074325824012382;
+        var discordChannel = _client.GetChannel(channel) as IMessageChannel;
+        
+        if (discordChannel == null)
+        {
+            throw new InvalidOperationException($"Channel with ID {channel} not found.");
+        }
+        
+        return discordChannel.SendMessageAsync(message, tts);
     }
 }

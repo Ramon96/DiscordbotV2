@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using Glados.Discord.Commands;
 using Glados.Discord.Services;
 using Glados.Discord.Services.Contracts;
+using IDiscordClient = Glados.Discord.Contracts.IDiscordClient;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Glados.Discord.ServiceCollection;
@@ -19,7 +20,7 @@ public static class ServiceCollectionExtensions
         var collection = services
             .AddSingleton(config)
             .AddSingleton<DiscordSocketClient>()
-            .AddSingleton<DiscordClient>()
+            .AddSingleton<IDiscordClient, DiscordClient>()
             .AddSingleton<DiscordNotificationService>()
             .AddScoped<IDiscordUserService, DiscordUserService>()
             .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()

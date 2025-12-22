@@ -107,7 +107,6 @@ public class HiscoreJob
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
-            
             updates.Add((user, changes));
             
             if  (!updates.Any())
@@ -115,8 +114,6 @@ public class HiscoreJob
                 _logger.LogInformation("No updates to process after checking user: {Username}", user.Username);
                 continue;
             }
-            
-     
             
             _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}", 
                 changes.StatChanges.Count, changes.ActivityChanges.Count, user.Username);
