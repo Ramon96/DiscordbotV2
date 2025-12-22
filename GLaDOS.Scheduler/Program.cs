@@ -1,6 +1,7 @@
 using GLaDOS.Infra.EntityFramework;
 using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
+using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,7 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
-
+app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 
