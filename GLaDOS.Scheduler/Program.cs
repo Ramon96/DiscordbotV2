@@ -1,17 +1,10 @@
-using System;
-using Glados.Discord.Services;
 using GLaDOS.Infra.EntityFramework;
-using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
 using Hangfire;
 using Hangfire.Dashboard;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
