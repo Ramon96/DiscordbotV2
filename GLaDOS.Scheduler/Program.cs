@@ -1,6 +1,7 @@
 using System;
 using Glados.Discord.Services;
 using GLaDOS.Infra.EntityFramework;
+using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -23,10 +24,8 @@ builder.Services.AddCoreServices(builder.Configuration);
 builder.Services.AddTransient<HiscoreCalculator>();
 builder.Services.AddTransient<HiscoreJob>();
 
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 var app = builder.Build();
 
@@ -37,23 +36,27 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHangfireDashboard();
+app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new HangfireAuthorizationFilter() }
+    }
+    );
 
 RecurringJob.AddOrUpdate<HiscoreJob>(
     "sync-hiscores",
     job => job.ExecuteAsync(CancellationToken.None),
     Cron.Hourly);
+
 
 
 app.Run();
