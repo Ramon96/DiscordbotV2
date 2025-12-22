@@ -1,4 +1,5 @@
 using GLaDOS.Infra.EntityFramework;
+using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -44,20 +45,10 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
     {
         Authorization = new[]
         {
-            new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
-            {
-                RequireSsl = false,
-                SslRedirect = false,
-                LoginCaseSensitive = true,
-                Users = new[]
-                {
-                    new BasicAuthAuthorizationUser
-                    {
-                        Login = builder.Configuration["Hangfire:User"],
-                        PasswordClear = builder.Configuration["Hangfire:Password"]
-                    }
-                }
-            })
+            new HangfireAuthorizationFilter(
+                builder.Configuration["Hangfire.Username"], 
+                builder.Configuration["Hangfire.Password"]
+            )
         }
     }
 );
