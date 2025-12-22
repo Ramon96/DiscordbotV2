@@ -68,10 +68,13 @@ public class ConnectOsrsUser : IDiscordCommand
             await command.RespondAsync($"OSRS user '{osrsUsername}' is already linked to a Discord account.", ephemeral: true);
             return;
         }
+        
+        var cleanUsername = osrsUsername.ToLower();
+        cleanUsername = char.ToUpper(cleanUsername[0]) + cleanUsername.Substring(1);
 
         var osrsUser = new OldschoolRunescapeUser
         {
-            Username = osrsUsername,
+            Username = cleanUsername,
             DiscordUserId = discordUser.Id,
         };
 
