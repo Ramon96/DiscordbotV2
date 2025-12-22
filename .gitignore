@@ -56,8 +56,6 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
-.github/
-.github
 .vscode/
 .idea/
 .idea
