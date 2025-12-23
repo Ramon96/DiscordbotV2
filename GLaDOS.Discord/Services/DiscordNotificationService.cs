@@ -171,7 +171,7 @@ public class DiscordNotificationService
     private Embed BuildCollectionLogEmbed(OldschoolRunescapeUser user, OsrsWikiItemInfo item, string itemImageUrl)
     {
         var embed = new EmbedBuilder()
-            .WithTitle($"{user.Username} has obtained new Collection Log items!")
+            .WithTitle($"{user.Username} has obtained a collection log item!")
             .WithColor(196, 67, 45)
             .WithThumbnailUrl(itemImageUrl)
             .AddField(item.Name, item.Examine, inline: false)
