@@ -17,5 +17,10 @@ public class DiscordUserConfig : EntityConfig<DiscordUser>, IEntityTypeConfigura
         builder
             .HasIndex(entity => entity.DiscordId)
             .IsUnique();
+        
+        builder.HasMany(discordUser => discordUser.OldschoolRunescapeUsers)
+            .WithOne(oldschoolRunescapeUser => oldschoolRunescapeUser.DiscordUser)
+            .HasForeignKey(oldschoolRunescapeUser => oldschoolRunescapeUser.DiscordUserId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
