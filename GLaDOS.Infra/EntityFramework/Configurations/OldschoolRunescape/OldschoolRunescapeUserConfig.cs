@@ -18,6 +18,10 @@ public class OldschoolRunescapeUserConfig : EntityConfig<OldschoolRunescapeUser>
         builder
             .HasIndex(entity => entity.Username)
             .IsUnique();
+        
+        builder
+            .Property(entity => entity.WikiSyncEnabled)
+            .HasDefaultValue(true);
 
         builder.HasMany(user => user.Stats)
             .WithOne(stat => stat.User)

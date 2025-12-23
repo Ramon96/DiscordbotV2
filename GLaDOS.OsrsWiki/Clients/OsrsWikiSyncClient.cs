@@ -22,10 +22,11 @@ public class OsrsWikiSyncClient : IOsrsWikiSyncClient
         {
             var username = request.Username;
             var formattedUsername = username.ToLower().Replace(' ', '_');
-            
             var relativeUrl = $"{Uri.EscapeDataString(formattedUsername)}/STANDARD";
-            
-            return await _httpClient.GetFromJsonAsync<OsrsWikiSyncResponse>(relativeUrl, cancellationToken);
+
+            var response = await _httpClient.GetAsync(relativeUrl, cancellationToken);
+                
+            return await response.Content.ReadFromJsonAsync<OsrsWikiSyncResponse>(cancellationToken: cancellationToken) ?? null;
         }
         catch (Exception e)
         {

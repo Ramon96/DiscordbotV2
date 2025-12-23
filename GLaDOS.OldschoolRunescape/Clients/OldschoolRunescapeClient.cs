@@ -22,10 +22,11 @@ public class OldschoolRunescapeClient : IOldschoolRunescapeClient
         {
             var username = request.Username;
             var formattedUsername = username.ToLower().Replace(' ', '_');
-            
             var relativeUrl = $"index_lite.json?player={Uri.EscapeDataString(formattedUsername)}";
             
-            return  await _httpClient.GetFromJsonAsync<OldschoolRunescapeHiscoreResponse>(relativeUrl, cancellationToken);
+            var response = await _httpClient.GetAsync(relativeUrl, cancellationToken);
+            
+            return await response.Content.ReadFromJsonAsync<OldschoolRunescapeHiscoreResponse>(cancellationToken: cancellationToken) ?? null;
         }
         catch (HttpRequestException exception)
         {
