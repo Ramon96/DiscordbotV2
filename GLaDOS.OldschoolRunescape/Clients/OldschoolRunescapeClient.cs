@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
-using GLaDOS.OldschoolRunescape.Responses;
 using GLaDOS.OldschoolRunescape.Requests;
+using GLaDOS.OldschoolRunescape.Responses;
 
-namespace GLaDOS.Domain.OldschoolRunescape;
+namespace GLaDOS.OldschoolRunescape.Clients;
 
 public class OldschoolRunescapeClient : IOldschoolRunescapeClient
 {
@@ -22,12 +22,10 @@ public class OldschoolRunescapeClient : IOldschoolRunescapeClient
         {
             var username = request.Username;
             var formattedUsername = username.ToLower().Replace(' ', '_');
-
-            var url = $"https://secure.runescape.com/m=hiscore_oldschool/index_lite.json?player={Uri.EscapeDataString(formattedUsername)}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            return await response.Content.ReadFromJsonAsync<OldschoolRunescapeHiscoreResponse>(cancellationToken);
+            
+            var relativeUrl = $"index_lite.json?player={Uri.EscapeDataString(formattedUsername)}";
+            
+            return  await _httpClient.GetFromJsonAsync<OldschoolRunescapeHiscoreResponse>(relativeUrl, cancellationToken);
         }
         catch (HttpRequestException exception)
         {

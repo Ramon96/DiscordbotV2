@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\GLaDOS.Core\GLaDOS.Core.csproj" />
+      <ProjectReference Include="..\GLaDOS.Infra\GLaDOS.Infra.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Specifications\" />
+    </ItemGroup>
+
+</Project>

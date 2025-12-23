@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLaDOS.Infra", "GLaDOS.Infr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLaDOS.OldschoolRunescape", "GLaDOS.OldschoolRunescape\GLaDOS.OldschoolRunescape.csproj", "{3297F9BE-17B7-484E-9C45-549B69649C29}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLaDOS.OsrsWiki", "GLaDOS.OsrsWiki\GLaDOS.OsrsWiki.csproj", "{48038658-B9C6-4EB9-B0BE-859C1470452B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +38,10 @@ Global
 		{3297F9BE-17B7-484E-9C45-549B69649C29}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3297F9BE-17B7-484E-9C45-549B69649C29}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3297F9BE-17B7-484E-9C45-549B69649C29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48038658-B9C6-4EB9-B0BE-859C1470452B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48038658-B9C6-4EB9-B0BE-859C1470452B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48038658-B9C6-4EB9-B0BE-859C1470452B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48038658-B9C6-4EB9-B0BE-859C1470452B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
