@@ -79,6 +79,8 @@ public class OsrsWikiSyncJob : IHangfireJob
                     continue;
                 }
                 
+                user.ModifiedDate = DateTime.UtcNow;
+                
                 if (user.CollectionLog == null || !user.Quests.Any() || !user.Diaries.Any() || !user.Songs.Any())
                 {
                     InitializeUserData(user, request);
@@ -178,13 +180,11 @@ public class OsrsWikiSyncJob : IHangfireJob
                 if (!changes.HasChanges)
                 {
                     _logger.LogInformation("No changes detected for user: {Username}", user.Username);
-                    user.ModifiedDate = DateTime.UtcNow;
                     
                     await dbContext.SaveChangesAsync(cancellationToken);
                     continue;
                 }
                 
-                user.ModifiedDate = DateTime.UtcNow;
                 await dbContext.SaveChangesAsync(cancellationToken);
                 allUpdates.Add((user, changes));
                 
@@ -220,7 +220,6 @@ public class OsrsWikiSyncJob : IHangfireJob
         if (!user.Diaries.Any()) user.Diaries.AddRange(request.ToDiaryEntities(user.Id));
         if (!user.Songs.Any()) user.Songs.AddRange(request.ToMusicEntities(user.Id));
         
-        user.ModifiedDate = DateTime.UtcNow;
         user.WikiSyncEnabled = true;
     }
     
