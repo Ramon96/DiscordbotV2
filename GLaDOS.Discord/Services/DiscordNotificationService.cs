@@ -22,33 +22,40 @@ public class DiscordNotificationService
         var channel = _client.GetChannel(_notificationChannelId) as IMessageChannel;
         if (channel == null) return;
 
-
-        var skillGroups = allUpdates
-            .SelectMany(user => user.Changes.StatChanges.Select(stat => new { user.User, Stat = stat }))
-            .GroupBy(userSkills => userSkills.Stat.StatName)
+        var levelUpdates = allUpdates
+            .Where(u => u.Changes.StatChanges.Any())
             .ToList();
 
-        if (skillGroups.Any())
+        foreach (var update in levelUpdates)
         {
+            var stats = update.Changes.StatChanges;
+
             var embed = new EmbedBuilder()
-                .WithTitle("Skill Progress")
-                .WithDescription("The following players have made progress!")
+                .WithTitle($"{update.User.Username}'s level gains!")
+                .WithDescription("The following skill(s) have increased")
                 .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Skills_icon.png")
                 .WithColor(Color.DarkRed)
                 .WithCurrentTimestamp();
-            
-            foreach (var group in skillGroups)
-            {
-                string skillText = "";
-                foreach (var userSkills in group)
-                {
-                    var diff = userSkills.Stat.NewLevel - userSkills.Stat.OldLevel;
-                    skillText +=
-                        $"**{userSkills.User.Username}**: {userSkills.Stat.OldLevel} → **{userSkills.Stat.NewLevel}** (+{diff})\n";
-                }
 
-                embed.AddField(group.Key, skillText, inline: false);
+            var overallStat = stats.FirstOrDefault(s => s.StatName == "Overall");
+
+            var normalSkills = stats
+                .Where(s => s.StatName != "Overall")
+                .OrderBy(s => s.StatId)
+                .ToList();
+
+            foreach (var stat in normalSkills)
+            {
+                var diff = stat.NewLevel - stat.OldLevel;
+                embed.AddField(stat.StatName, $"{stat.OldLevel} → **{stat.NewLevel}** (+{diff})", inline: false);
             }
+
+            if (overallStat != null)
+            {
+                var diff = overallStat.NewLevel - overallStat.OldLevel;
+                embed.WithFooter($"Overall: {overallStat.OldLevel} → {overallStat.NewLevel} (+{diff})");
+            }
+
             await channel.SendMessageAsync(embed: embed.Build());
         }
 
@@ -71,9 +78,7 @@ public class DiscordNotificationService
                 var bossText = "";
                 foreach (var entry in group)
                 {
-                    // bossText += $"{flavor.Icon} **{entry.User.Username}**: {entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})\n";
-                    bossText +=
-                        $"**{entry.User.Username}**: {entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})\n";
+                    embed.AddField(entry.User.Username, $"{entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference}", inline: false);
                 }
 
                 embed.WithDescription(bossText);

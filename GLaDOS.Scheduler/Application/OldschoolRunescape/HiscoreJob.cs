@@ -3,6 +3,7 @@ using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.EntityFramework;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using GLaDOS.OldschoolRunescape.Requests;
+using GLaDOS.Scheduler.Application.Hangfire.Contracts;
 using GLaDOS.Scheduler.Extensions;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ namespace GLaDOS.Scheduler.Application.OldschoolRunescape;
 
 [DisableConcurrentExecution(60 * 10)] 
 [AutomaticRetry(Attempts = 1)]
-public class HiscoreJob
+public class HiscoreJob : IHangfireJob
 {
     private readonly ILogger<HiscoreJob> _logger;
     private readonly IOldschoolRunescapeClient _client;
@@ -94,7 +95,7 @@ public class HiscoreJob
 
             foreach (var change in changes.StatChanges)
             {
-                var stat = user.Stats!.First(s => s.Name == change.StatName);
+                var stat = user.Stats!.First(stat => stat.Name == change.StatName);
                 stat.Level = change.NewLevel;
                 stat.Experience = change.NewExperience;
                 stat.Rank = change.NewRank;

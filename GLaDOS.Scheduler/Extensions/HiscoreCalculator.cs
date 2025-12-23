@@ -22,7 +22,8 @@ public class HiscoreCalculator
                     OldExperience = existingStat.Experience,
                     NewExperience = freshStat.Xp,
                     OldRank = existingStat.Rank,
-                    NewRank = freshStat.Rank
+                    NewRank = freshStat.Rank,
+                    StatId = existingStat.SkillId
                 });
             }
         }

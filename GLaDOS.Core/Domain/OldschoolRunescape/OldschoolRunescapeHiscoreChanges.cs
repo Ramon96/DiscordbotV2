@@ -10,6 +10,7 @@ public class OldschoolRunescapeHiscoreChanges
 public class StatChange
 {
     public required string StatName { get; set; }
+    public uint StatId { get; set; }
     public int OldLevel { get; set; }
     public int NewLevel { get; set; }
     public long OldExperience { get; set; }
