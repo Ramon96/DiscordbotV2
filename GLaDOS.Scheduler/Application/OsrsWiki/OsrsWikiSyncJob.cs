@@ -178,6 +178,9 @@ public class OsrsWikiSyncJob : IHangfireJob
                 if (!changes.HasChanges)
                 {
                     _logger.LogInformation("No changes detected for user: {Username}", user.Username);
+                    user.ModifiedDate = DateTime.UtcNow;
+                    
+                    await dbContext.SaveChangesAsync(cancellationToken);
                     continue;
                 }
                 
