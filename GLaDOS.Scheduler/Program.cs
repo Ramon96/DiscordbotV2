@@ -1,4 +1,5 @@
 using GLaDOS.Infra.EntityFramework;
+using GLaDOS.Scheduler.Application;
 using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Application.Swagger;
@@ -16,8 +17,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCoreServices(builder.Configuration);
 
+// todo extension maken 
 builder.Services.AddTransient<HiscoreCalculator>();
 builder.Services.AddTransient<HiscoreJob>();
+builder.Services.AddTransient<OsrsWikiSyncJob>();
+
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -52,8 +56,41 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
     }
 );
 
-RecurringJob.AddOrUpdate<HiscoreJob>(
-    "sync-hiscores",
-    job => job.ExecuteAsync(CancellationToken.None),
-    Cron.MinuteInterval(10));
+
+// TODO: move job scheduling to a proper place (ex: HangfireJobScheduler.cs)
+var runRecurringJobs = !app.Environment.IsDevelopment();
+
+if (runRecurringJobs)
+{
+    RecurringJob.AddOrUpdate<HiscoreJob>(
+        "sync-hiscores",
+        job => job.ExecuteAsync(CancellationToken.None),
+        Cron.MinuteInterval(10));
+
+    RecurringJob.AddOrUpdate<OsrsWikiSyncJob>(
+        "sync-osrs-wiki",
+        job => job.ExecuteAsync(CancellationToken.None),
+        Cron.Hourly);
+}
+else
+{
+    RecurringJob.RemoveIfExists("sync-hiscores");
+    RecurringJob.RemoveIfExists("sync-osrs-wiki");
+
+
+    app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>
+        {
+            var id = BackgroundJob.Enqueue<HiscoreJob>(job => job.ExecuteAsync(CancellationToken.None));
+            return Results.Accepted($"/hangfire/jobs/details/{id}");
+        })
+        .WithTags("Jobs");
+
+    app.MapPost("/jobs/osrswiki/trigger", (HttpContext _) =>
+        {
+            var id = BackgroundJob.Enqueue<OsrsWikiSyncJob>(job => job.ExecuteAsync(CancellationToken.None));
+            return Results.Accepted($"/hangfire/jobs/details/{id}");
+        })
+        .WithTags("Jobs");
+}
+
 app.Run();

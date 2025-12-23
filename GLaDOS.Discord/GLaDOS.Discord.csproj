@@ -23,5 +23,6 @@
       <ProjectReference Include="..\GLaDOS.Core\GLaDOS.Core.csproj" />
       <ProjectReference Include="..\GLaDOS.Infra\GLaDOS.Infra.csproj" />
       <ProjectReference Include="..\GLaDOS.OldschoolRunescape\GLaDOS.OldschoolRunescape.csproj" />
+      <ProjectReference Include="..\GLaDOS.OsrsWiki\GLaDOS.OsrsWiki.csproj" />
     </ItemGroup>
 </Project>

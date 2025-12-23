@@ -21,7 +21,10 @@ public static class ServiceCollectionExtensions
                     options.UseNpgsqlConnection(connectionString);
 
                 }))
-                .AddHangfireServer();
+                .AddHangfireServer(options =>
+                {
+                    options.WorkerCount = 2;
+                });
 
         return collection;
     }

@@ -1,6 +1,9 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using GLaDOS.Domain.OldschoolRunescape;
+using GLaDOS.Domain.OsrsWiki;
+using GLaDOS.OsrsWiki.Clients.Contracts;
+using GLaDOS.OsrsWiki.Responses;
 using Microsoft.Extensions.Configuration;
 
 namespace Glados.Discord.Services;
@@ -8,11 +11,13 @@ namespace Glados.Discord.Services;
 public class DiscordNotificationService
 {
     private readonly DiscordSocketClient _client;
+    private readonly IOsrsWikiItemClient _wikiItemClient;
     private readonly ulong _notificationChannelId;
 
-    public DiscordNotificationService(DiscordSocketClient client, IConfiguration configuration)
+    public DiscordNotificationService(DiscordSocketClient client, IConfiguration configuration, IOsrsWikiItemClient wikiItemClient)
     {
         _client = client;
+        _wikiItemClient = wikiItemClient;
         _notificationChannelId = configuration.GetValue<ulong>("Discord:OldschoolRunescapeChannelId");
     }
 
@@ -23,7 +28,7 @@ public class DiscordNotificationService
         if (channel == null) return;
 
         var levelUpdates = allUpdates
-            .Where(u => u.Changes.StatChanges.Any())
+            .Where(user => user.Changes.StatChanges.Any())
             .ToList();
 
         foreach (var update in levelUpdates)
@@ -40,8 +45,8 @@ public class DiscordNotificationService
             var overallStat = stats.FirstOrDefault(s => s.StatName == "Overall");
 
             var normalSkills = stats
-                .Where(s => s.StatName != "Overall")
-                .OrderBy(s => s.StatId)
+                .Where(stat => stat.StatName != "Overall")
+                .OrderBy(stat => stat.StatId)
                 .ToList();
 
             foreach (var stat in normalSkills)
@@ -60,8 +65,8 @@ public class DiscordNotificationService
         }
 
         var activityGroups = allUpdates
-            .SelectMany(u => u.Changes.ActivityChanges.Select(act => new { u.User, Activity = act }))
-            .GroupBy(x => x.Activity.ActivityName)
+            .SelectMany(user => user.Changes.ActivityChanges.Select(act => new { user.User, Activity = act }))
+            .GroupBy(user => user.Activity.ActivityName)
             .ToList();
 
         if (activityGroups.Any())
@@ -85,5 +90,104 @@ public class DiscordNotificationService
                 await channel.SendMessageAsync(embed: embed.Build());
             }
         }
+    }
+    
+    public async Task SendWikiUpdatesAsync(List<(OldschoolRunescapeUser User, OsrsWikiSyncChanges Changes)> updates)
+    {
+        var channel = _client.GetChannel(_notificationChannelId) as IMessageChannel;
+        if (channel == null) return;
+
+        foreach (var (user, changes) in updates)
+        {
+            if (changes.CompletedQuests.Any())
+            {
+                foreach (var quest in changes.CompletedQuests)
+                {
+                    var embed = new EmbedBuilder()
+                        .WithTitle($"{user.Username} has a quest completion!")
+                        .AddField(quest, "Completed!", inline: false)
+                        .WithColor(Color.Blue)
+                        .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Quest_point_icon.png?dc356")
+                        .WithFooter("More")
+                        .WithCurrentTimestamp()
+                        .Build();
+                    
+                    await channel.SendMessageAsync(embed: embed);
+                }
+            }
+            
+            if (changes.CompletedDiaries.Any())
+            {
+                foreach (var diary in changes.CompletedDiaries)
+                {
+                    var embed = new EmbedBuilder()
+                        .WithTitle($"{user.Username} has completed the achievement diary")
+                        .AddField($"{diary.Region} Diary", $"{diary.Tier} Tier Completed!", inline: false)
+                        .WithColor(Color.Green)
+                        .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Achievement_Diaries_icon.png?b4e0c")
+                        .WithFooter("Let's go dude!")
+                        .WithCurrentTimestamp()
+                        .Build();
+                    
+                    await channel.SendMessageAsync(embed: embed);
+                }
+            }
+
+            if (changes.UnlockedTracks.Any())
+            {
+                foreach (var song in changes.UnlockedTracks)
+                {
+                    var embed = new EmbedBuilder()
+                        .WithTitle($"{user.Username} has unlocked a new music track!")
+                        .AddField(song, "Unlocked!", inline: false)
+                        .WithColor(Color.Purple)
+                        .WithThumbnailUrl("https://oldschool.runescape.wiki/images/archive/20150606083743%21Music.png?2a5be")
+                        .WithFooter("Rock on!")
+                        .WithCurrentTimestamp()
+                        .Build();
+                    
+                    await channel.SendMessageAsync(embed: embed);
+                }
+            }
+            
+            if (changes.NewCollectionLogItems.Any())
+            {
+                foreach (var collectionLog in changes.NewCollectionLogItems)
+                {
+                    var itemDetails = await _wikiItemClient.GetItemDetailsAsync(collectionLog, CancellationToken.None);
+                    if (itemDetails == null) continue;
+
+                    var itemImageUrl = _wikiItemClient.GetImageUrl(itemDetails.Images.LastOrDefault() ??
+                                                                   "https://oldschool.runescape.wiki/w/Collection_log#/media/File:Collection_log.png"); 
+                    
+                    var embed = BuildCollectionLogEmbed(user, itemDetails, itemImageUrl);
+                    await channel.SendMessageAsync(embed: embed);
+                }
+            }
+        }
+    }
+    
+
+    private Embed BuildCollectionLogEmbed(OldschoolRunescapeUser user, OsrsWikiItemInfo item, string itemImageUrl)
+    {
+        var embed = new EmbedBuilder()
+            .WithTitle($"{user.Username} has obtained new Collection Log items!")
+            .WithColor(196, 67, 45)
+            .WithThumbnailUrl(itemImageUrl)
+            .AddField(item.Name, item.Examine, inline: false)
+            .WithFooter("Congrats!")
+            .WithCurrentTimestamp();
+
+        if (item.Value.HasValue)
+        {
+            embed.AddField("Grand Exchange Value", $"{item.Value.Value:N0} coins", inline: true);
+        }
+
+        if (item.HighAlch.HasValue)
+        {
+            embed.AddField("High Alchemy Value", $"{item.HighAlch.Value:N0} coins", inline: true);
+        }
+
+        return embed.Build();
     }
 }

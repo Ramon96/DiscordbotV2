@@ -1,7 +1,7 @@
 ﻿using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.OldschoolRunescape.Responses;
 
-namespace GLaDOS.Scheduler.Extensions;
+namespace GLaDOS.Scheduler.Extensions.OldschoolRunescape;
 
 public static class HiscoreMappingExtensions
 {

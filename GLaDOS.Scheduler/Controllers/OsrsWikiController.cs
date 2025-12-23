@@ -8,11 +8,13 @@ namespace GLaDOS.Scheduler.Controllers;
 [Route("[controller]")]
 public class OsrsWikiController : ControllerBase
 {
-    private readonly IOsrsWikiSyncClient _client;
+    private readonly IOsrsWikiSyncClient _wikiSyncClient;
+    private readonly IOsrsWikiItemClient _wikiItemClient;
 
-    public OsrsWikiController(IOsrsWikiSyncClient client)
+    public OsrsWikiController(IOsrsWikiSyncClient wikiSyncClient, IOsrsWikiItemClient wikiItemClient)
     {
-        _client = client;
+        _wikiSyncClient = wikiSyncClient;
+        _wikiItemClient = wikiItemClient;
     }
 
     [HttpGet("UserSyncData")]
@@ -27,7 +29,7 @@ public class OsrsWikiController : ControllerBase
         }
 
         var syncData =
-            await _client.GetOsrsWikiSyncDataAsync(new OsrsWikiSyncRequest { Username = username }, cancellationToken);
+            await _wikiSyncClient.GetOsrsWikiSyncDataAsync(new OsrsWikiSyncRequest { Username = username }, cancellationToken);
 
         if (syncData == null)
         {
@@ -35,5 +37,22 @@ public class OsrsWikiController : ControllerBase
         }
 
         return Ok(syncData);
+    }
+    
+    [HttpGet("Item")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> GetUserSyncDataAsync([FromQuery] int itemId,
+        CancellationToken cancellationToken = default)
+    {
+
+        var item = await _wikiItemClient.GetItemDetailsAsync(itemId, cancellationToken);
+
+        if (item == null)
+        {
+            return NotFound($"Item '{itemId}' not found.");
+        }
+
+        return Ok(item);
     }
 }

@@ -5,13 +5,14 @@ using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using GLaDOS.OldschoolRunescape.Requests;
 using GLaDOS.Scheduler.Application.Hangfire.Contracts;
 using GLaDOS.Scheduler.Extensions;
+using GLaDOS.Scheduler.Extensions.OldschoolRunescape;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 
 
 namespace GLaDOS.Scheduler.Application.OldschoolRunescape;
 
-[DisableConcurrentExecution(60 * 10)] 
+[DisableConcurrentExecution(0)] 
 [AutomaticRetry(Attempts = 1)]
 public class HiscoreJob : IHangfireJob
 {
@@ -41,7 +42,7 @@ public class HiscoreJob : IHangfireJob
         {
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             userIds = await context.Set<OldschoolRunescapeUser>()
-                .Select(u => u.Id)
+                .Select(user => user.Id)
                 .ToListAsync(cancellationToken);
         }
 
@@ -75,8 +76,8 @@ public class HiscoreJob : IHangfireJob
             {
                 _logger.LogWarning("User '{Username}' has null Stats or Activities collections.", user.Username);
 
-                var newStats = freshData.Skills.Select(s => s.ToEntity(user.Id));
-                var newActivities = freshData.Activities.Select(a => a.ToEntity(user.Id));
+                var newStats = freshData.Skills.Select(skill => skill.ToEntity(user.Id));
+                var newActivities = freshData.Activities.Select(activity => activity.ToEntity(user.Id));
 
                 dbContext.Set<OldschoolRunescapeStat>().AddRange(newStats);
                 dbContext.Set<OldschoolRunescapeActivity>().AddRange(newActivities);
@@ -103,7 +104,7 @@ public class HiscoreJob : IHangfireJob
 
             foreach (var change in changes.ActivityChanges)
             {
-                var activity = user.Activities!.First(a => a.Name == change.ActivityName);
+                var activity = user.Activities!.First(activity => activity.Name == change.ActivityName);
                 activity.Score = change.NewScore;
                 activity.Rank = change.NewRank;
             }
