@@ -1,4 +1,5 @@
 using GLaDOS.Domain.OldschoolRunescape;
+using GLaDOS.Domain.OsrsWiki;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,6 +27,26 @@ public class OldschoolRunescapeUserConfig : EntityConfig<OldschoolRunescapeUser>
         builder.HasMany(user => user.Activities)
             .WithOne(activity => activity.User)
             .HasForeignKey(activity => activity.OldschoolRunescapeUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.HasMany(user => user.Songs)
+            .WithOne(song => song.User)
+            .HasForeignKey(song => song.OldschoolRunescapeUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.HasMany(user => user.Quests)
+            .WithOne(quest => quest.User)
+            .HasForeignKey(quest => quest.OldschoolRunescapeUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.HasMany(user => user.Diaries)
+            .WithOne(diary => diary.User)
+            .HasForeignKey(quest => quest.OldschoolRunescapeUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.HasOne(user => user.CollectionLog)
+            .WithOne(collectionLog => collectionLog.User)
+            .HasForeignKey<OsrsWikiCollectionLog>(collectionLog => collectionLog.OldschoolRunescapeUserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

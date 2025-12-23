@@ -6,7 +6,7 @@ namespace GLaDOS.Infra.EntityFramework.Configurations.OldschoolRunescape;
 
 public class OldschoolRunescapeStatConfig : EntityConfig<OldschoolRunescapeStat>
 {
-    public new void Configure(EntityTypeBuilder<OldschoolRunescapeStat> builder)
+    public override void Configure(EntityTypeBuilder<OldschoolRunescapeStat> builder)
     {
         base.Configure(builder);
 

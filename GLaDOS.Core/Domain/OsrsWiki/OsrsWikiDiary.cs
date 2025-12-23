@@ -8,20 +8,16 @@ public class OsrsWikiDiary : Entity
     public Guid OldschoolRunescapeUserId { get; init; }
    
     public string Region { get; set; }
-    public List<DiaryDifficulty> Difficulties { get; set; } = new();
+    
+    public DiaryTier Easy { get; set; } = new();
+    public DiaryTier Medium { get; set; } = new();
+    public DiaryTier Hard { get; set; } = new();
+    public DiaryTier Elite { get; set; } = new();
 }
 
-public class DiaryDifficulty
+
+public class DiaryTier
 {
-    public Difficulty Difficulty { get; set; }
-    public bool IsCompleted { get; set; }
+    public bool IsComplete { get; set; }
     public List<bool> Tasks { get; set; } = new();
-}
-
-public enum Difficulty
-{
-    Easy,
-    Medium,
-    Hard,
-    Elite
 }
