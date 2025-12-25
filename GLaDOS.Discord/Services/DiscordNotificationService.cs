@@ -83,7 +83,7 @@ public class DiscordNotificationService
                 var bossText = "";
                 foreach (var entry in group)
                 {
-                    embed.AddField(entry.User.Username, $"{entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference}", inline: false);
+                    embed.AddField(entry.User.Username, $"{entry.Activity.NewScore} KC (+{entry.Activity.ScoreDifference})", inline: false);
                 }
 
                 embed.WithDescription(bossText);
