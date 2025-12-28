@@ -101,19 +101,30 @@ public class DiscordNotificationService
         {
             if (changes.CompletedQuests.Any())
             {
-                foreach (var quest in changes.CompletedQuests)
+                const int MaxLines = 15;
+                var totalQuests = changes.CompletedQuests.Count;
+                
+                var lines = changes.CompletedQuests
+                    .Take(MaxLines)
+                    .Select(quest => $"• {quest}")
+                    .ToList();
+                
+                
+                if (totalQuests > MaxLines)
                 {
-                    var embed = new EmbedBuilder()
-                        .WithTitle($"{user.Username} has a quest completion!")
-                        .AddField(quest, "Completed!", inline: false)
-                        .WithColor(Color.Blue)
-                        .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Quest_point_icon.png?dc356")
-                        .WithFooter("More")
-                        .WithCurrentTimestamp()
-                        .Build();
-                    
-                    await channel.SendMessageAsync(embed: embed);
+                    lines.Add($"**... + {totalQuests - MaxLines} more**");
                 }
+                
+                var embed = new EmbedBuilder()
+                    .WithTitle($"{user.Username} has completed new quest(s)!")
+                    .WithDescription(string.Join("\n", lines))
+                    .WithColor(Color.Blue)
+                    .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Quest_point_icon.png?dc356")
+                    .WithFooter($"Total completed: {totalQuests}")
+                    .WithCurrentTimestamp()
+                    .Build();
+            
+                await channel.SendMessageAsync(embed: embed);
             }
             
             if (changes.CompletedDiaries.Any())
@@ -135,32 +146,92 @@ public class DiscordNotificationService
 
             if (changes.UnlockedTracks.Any())
             {
-                foreach (var song in changes.UnlockedTracks)
+                const int MaxLines = 15;
+                var totalSongs = changes.UnlockedTracks.Count;
+
+                var lines = changes.UnlockedTracks
+                    .Take(MaxLines)
+                    .Select(song => $"• {song}")
+                    .ToList();
+
+                if (totalSongs > MaxLines)
                 {
-                    var embed = new EmbedBuilder()
-                        .WithTitle($"{user.Username} has unlocked a new music track!")
-                        .AddField(song, "Unlocked!", inline: false)
-                        .WithColor(Color.Purple)
-                        .WithThumbnailUrl("https://oldschool.runescape.wiki/images/archive/20150606083743%21Music.png?2a5be")
-                        .WithFooter("Rock on!")
-                        .WithCurrentTimestamp()
-                        .Build();
-                    
-                    await channel.SendMessageAsync(embed: embed);
+                    lines.Add($"**... + {totalSongs - MaxLines} more**");
                 }
+                
+                var embed = new EmbedBuilder()
+                    .WithTitle($"{user.Username} has unlocked new music track(s)!")
+                    .WithDescription(string.Join("\n", lines))
+                    .WithColor(Color.Purple)
+                    .WithThumbnailUrl("https://oldschool.runescape.wiki/images/archive/20150606083743%21Music.png?2a5be")
+                    .WithFooter($"{totalSongs} new tracks unlocked")
+                    .WithCurrentTimestamp()
+                    .Build();
+            
+                await channel.SendMessageAsync(embed: embed);
             }
             
             if (changes.NewCollectionLogItems.Any())
             {
-                foreach (var collectionLog in changes.NewCollectionLogItems)
-                {
-                    var itemDetails = await _wikiItemClient.GetItemDetailsAsync(collectionLog, CancellationToken.None);
-                    if (itemDetails == null) continue;
+                var totalItems = changes.NewCollectionLogItems.Count;
 
-                    var itemImageUrl = _wikiItemClient.GetImageUrl(itemDetails.Images.LastOrDefault() ??
-                                                                   "https://oldschool.runescape.wiki/w/Collection_log#/media/File:Collection_log.png"); 
+                if (totalItems > 10)
+                {
+                    foreach (var collectionLog in changes.NewCollectionLogItems)
+                    {
+                        var itemDetails =
+                            await _wikiItemClient.GetItemDetailsAsync(collectionLog, CancellationToken.None);
+                        if (itemDetails == null) continue;
+
+                        var itemImageUrl = _wikiItemClient.GetImageUrl(itemDetails.Images.LastOrDefault() ??
+                                                                       "https://oldschool.runescape.wiki/w/Collection_log#/media/File:Collection_log.png");
+
+                        var embed = BuildCollectionLogEmbed(user, itemDetails, itemImageUrl);
+                        await channel.SendMessageAsync(embed: embed);
+                    }
+                }
+                else
+                {
+                    const int MaxLines = 15; 
+                    var itemsToShow = changes.NewCollectionLogItems.Take(MaxLines).ToList();
+                    var remainingCount = totalItems - itemsToShow.Count;
+                
+                    var lines = new List<string>();
+                    long totalValueTop = 0;
                     
-                    var embed = BuildCollectionLogEmbed(user, itemDetails, itemImageUrl);
+                    foreach (var itemId in itemsToShow)
+                    {
+                        var itemDetails = await _wikiItemClient.GetItemDetailsAsync(itemId, CancellationToken.None);
+                    
+                        if (itemDetails == null) 
+                        {
+                            continue;
+                        }
+                        
+                        if (itemDetails.Value.HasValue)
+                        {
+                            totalValueTop += itemDetails.Value.Value;
+                        }
+                        
+                        lines.Add($"* **{itemDetails.Name}** - {itemDetails.Value.Value:N0} gp (GE)/{itemDetails.HighAlch.Value:N0} gp (HA)");
+                    }
+
+                    if (remainingCount > 0)
+                    {
+                        lines.Add($"\n**+ {remainingCount} more items...**");
+                    }
+                    
+                    
+
+                    var embed = new EmbedBuilder()
+                        .WithTitle($"{user.Username} has obtained {totalItems} new Collection Log items!")
+                        .WithDescription(string.Join("\n", lines))
+                        .WithColor(196, 67, 45)
+                        .WithThumbnailUrl("https://oldschool.runescape.wiki/images/Collection_log.png?3603b")
+                        .WithFooter($"Total value (of shown items): {totalValueTop:N0} gp (ge)")
+                        .WithCurrentTimestamp()
+                        .Build();
+
                     await channel.SendMessageAsync(embed: embed);
                 }
             }
