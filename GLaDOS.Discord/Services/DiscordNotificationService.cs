@@ -175,7 +175,7 @@ public class DiscordNotificationService
             {
                 var totalItems = changes.NewCollectionLogItems.Count;
 
-                if (totalItems > 10)
+                if (totalItems <= 10)
                 {
                     foreach (var collectionLog in changes.NewCollectionLogItems)
                     {
@@ -213,7 +213,19 @@ public class DiscordNotificationService
                             totalValueTop += itemDetails.Value.Value;
                         }
                         
-                        lines.Add($"* **{itemDetails.Name}** - {itemDetails.Value.Value:N0} gp (GE)/{itemDetails.HighAlch.Value:N0} gp (HA)");
+                        var priceParts = new List<string>();
+    
+                        if (itemDetails.Value.HasValue) 
+                            priceParts.Add($"{itemDetails.Value.Value:N0} gp (GE)");
+        
+                        if (itemDetails.HighAlch.HasValue) 
+                            priceParts.Add($"{itemDetails.HighAlch.Value:N0} gp (HA)");
+
+                        var priceString = priceParts.Any() 
+                            ? $" - {string.Join(" / ", priceParts)}" 
+                            : ""; 
+                        
+                        lines.Add($"* **{itemDetails.Name}**{priceString}");
                     }
 
                     if (remainingCount > 0)
@@ -221,8 +233,6 @@ public class DiscordNotificationService
                         lines.Add($"\n**+ {remainingCount} more items...**");
                     }
                     
-                    
-
                     var embed = new EmbedBuilder()
                         .WithTitle($"{user.Username} has obtained {totalItems} new Collection Log items!")
                         .WithDescription(string.Join("\n", lines))
