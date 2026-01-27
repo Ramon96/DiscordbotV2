@@ -25,6 +25,8 @@ public class OldschoolRunescapeClient : IOldschoolRunescapeClient
             var relativeUrl = $"index_lite.json?player={Uri.EscapeDataString(formattedUsername)}";
             
             var response = await _httpClient.GetAsync(relativeUrl, cancellationToken);
+
+            response.EnsureSuccessStatusCode();
             
             return await response.Content.ReadFromJsonAsync<OldschoolRunescapeHiscoreResponse>(cancellationToken: cancellationToken) ?? null;
         }
