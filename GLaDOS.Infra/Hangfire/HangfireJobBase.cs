@@ -1,6 +1,7 @@
 ﻿namespace GLaDOS.Infra.Hangfire;
 
-public class HangfireJobBase
+// TODO: implement
+public class HangfireJobBase 
 {
     
 }

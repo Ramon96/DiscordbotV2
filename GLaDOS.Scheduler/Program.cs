@@ -49,7 +49,7 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
         Authorization = new[]
         {
             new HangfireAuthorizationFilter(
-                builder.Configuration["Hangfire:Username"], 
+                builder.Configuration["Hangfire:Username"],
                 builder.Configuration["Hangfire:Password"]
             )
         }
@@ -64,12 +64,12 @@ if (runRecurringJobs)
 {
     RecurringJob.AddOrUpdate<HiscoreJob>(
         "sync-hiscores",
-        job => job.ExecuteAsync(CancellationToken.None),
+        job => job.ExecuteAsync(null,  CancellationToken.None),
         Cron.MinuteInterval(10));
 
     RecurringJob.AddOrUpdate<OsrsWikiSyncJob>(
         "sync-osrs-wiki",
-        job => job.ExecuteAsync(CancellationToken.None),
+        job => job.ExecuteAsync(null, CancellationToken.None),
         Cron.Hourly);
 }
 else
@@ -80,14 +80,14 @@ else
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>
         {
-            var id = BackgroundJob.Enqueue<HiscoreJob>(job => job.ExecuteAsync(CancellationToken.None));
+            var id = BackgroundJob.Enqueue<HiscoreJob>(job => job.ExecuteAsync(null, CancellationToken.None));
             return Results.Accepted($"/hangfire/jobs/details/{id}");
         })
         .WithTags("Jobs");
 
     app.MapPost("/jobs/osrswiki/trigger", (HttpContext _) =>
         {
-            var id = BackgroundJob.Enqueue<OsrsWikiSyncJob>(job => job.ExecuteAsync(CancellationToken.None));
+            var id = BackgroundJob.Enqueue<OsrsWikiSyncJob>(job => job.ExecuteAsync(null, CancellationToken.None));
             return Results.Accepted($"/hangfire/jobs/details/{id}");
         })
         .WithTags("Jobs");

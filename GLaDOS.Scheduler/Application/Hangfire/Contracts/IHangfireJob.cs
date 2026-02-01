@@ -1,6 +1,8 @@
-﻿namespace GLaDOS.Scheduler.Application.Hangfire.Contracts;
+﻿using Hangfire.Server;
+
+namespace GLaDOS.Scheduler.Application.Hangfire.Contracts;
 
 public interface IHangfireJob
 {
-    Task ExecuteAsync(CancellationToken cancellationToken = default);
+    Task ExecuteAsync(PerformContext context, CancellationToken cancellationToken = default);
 }

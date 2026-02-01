@@ -7,6 +7,8 @@ using GLaDOS.Scheduler.Application.Hangfire.Contracts;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.Extensions.OldschoolRunescape;
 using Hangfire;
+using Hangfire.Console;
+using Hangfire.Server;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -31,8 +33,9 @@ public class HiscoreJob : IHangfireJob
         _notificationService = notificationService;
     }
 
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(PerformContext context, CancellationToken cancellationToken = default)
     {
+        var progressBar = context.WriteProgressBar();
         _logger.LogInformation("Starting hiscore job");
 
         List<Guid> userIds;
@@ -40,14 +43,19 @@ public class HiscoreJob : IHangfireJob
 
         using (var scope = _scopeFactory.CreateScope())
         {
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            userIds = await context.Set<OldschoolRunescapeUser>()
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            userIds = await dbContext.Set<OldschoolRunescapeUser>()
                 .Select(user => user.Id)
                 .ToListAsync(cancellationToken);
         }
 
-        foreach (var userId in userIds)
+        for (int i = 0; i < userIds.Count; i++)
         {
+            double progress = (double)(i + 1) / userIds.Count * 100;
+            progressBar.SetValue(progress);
+
+            var userId = userIds[i];
+            
 
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -66,6 +74,8 @@ public class HiscoreJob : IHangfireJob
 
             var freshData = await _client.GetHiScoresByUsernameAsync(new OldschoolRunescapeHiscoreRequest { Username = user.Username }, cancellationToken);
 
+            context.WriteLine($"Processing user: {user.Username}...");
+            
             if (freshData == null)
             {
                 _logger.LogWarning("User '{Username}' not found in hiscores.", user.Username);
@@ -120,6 +130,13 @@ public class HiscoreJob : IHangfireJob
 
             _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}",
                 changes.StatChanges.Count, changes.ActivityChanges.Count, user.Username);
+            
+            if (changes.HasChanges)
+            {
+                context.SetTextColor(ConsoleTextColor.Green);
+                context.WriteLine($"[Update] {user.Username}: +{changes.StatChanges.Count} stats.");
+                context.ResetTextColor();
+            }
         }
 
         try
@@ -131,6 +148,6 @@ public class HiscoreJob : IHangfireJob
             _logger.LogError(ex, "Failed to send Discord notification");
         }
 
-        _logger.LogInformation("Completed hiscore job");
+        context.WriteLine("Completed hiscore job.");
     }
 }

@@ -8,6 +8,8 @@ using GLaDOS.OsrsWiki.Responses;
 using GLaDOS.Scheduler.Application.Hangfire.Contracts;
 using GLaDOS.Scheduler.Extensions.OsrsWiki;
 using Hangfire;
+using Hangfire.Console;
+using Hangfire.Server;
 using Microsoft.EntityFrameworkCore;
 
 namespace GLaDOS.Scheduler.Application;
@@ -30,25 +32,34 @@ public class OsrsWikiSyncJob : IHangfireJob
         _notificationService = notificationService;
     }
 
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(PerformContext context, CancellationToken cancellationToken = default)
     {
         List<Guid> userIds;
         var allUpdates = new List<(OldschoolRunescapeUser User, OsrsWikiSyncChanges Changes)>();
 
+        context.WriteLine("Fetching users eligible for Wiki Sync...");
+        
         using (var scope = _scopeFactory.CreateScope())
         {
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            userIds = await context.OldschoolRunescapeUsers
+            userIds = await dbContext.OldschoolRunescapeUsers
                 .Where(osrsUser => osrsUser.WikiSyncEnabled ||
                                    (osrsUser.ModifiedDate < DateTime.UtcNow.AddHours(-24)))
                 .Select(user => user.Id)
                 .Distinct()
                 .ToListAsync(cancellationToken);
         }
+        
+        var progressBar = context.WriteProgressBar();
+        context.WriteLine($"Found {userIds.Count} users to sync.");
 
-        foreach (var userId in userIds)
+        for (int i = 0; i < userIds.Count; i++)
         {
+            var userId = userIds[i];
+            var progress = (double)(i + 1) / userIds.Count * 100;
+            progressBar.SetValue(progress);
+            
             try
             {
                 using var scope = _scopeFactory.CreateScope();
@@ -180,28 +191,36 @@ public class OsrsWikiSyncJob : IHangfireJob
                 if (!changes.HasChanges)
                 {
                     _logger.LogInformation("No changes detected for user: {Username}", user.Username);
-                    
+                    context.WriteLine($"- {user.Username}: No new data found.");
                     await dbContext.SaveChangesAsync(cancellationToken);
                     continue;
                 }
                 
+                
                 await dbContext.SaveChangesAsync(cancellationToken);
                 allUpdates.Add((user, changes));
                 
+                context.SetTextColor(ConsoleTextColor.Green);
+                context.WriteLine($"[Success] {user.Username}: Updated {changes.NewCollectionLogItems.Count} items, {changes.CompletedQuests.Count} quests.");
+                context.ResetTextColor();
                 
-                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
                 
                 _logger.LogInformation("Successfully synced OSRS Wiki data for userId {userId}", userId);
 
+                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Error syncing OSRS Wiki data for userId {userId}", userId);
+                context.SetTextColor(ConsoleTextColor.Red);
+                context.WriteLine($"[Error] Failed to sync userId {userId}: {e.Message}");
+                context.ResetTextColor();
             }
         }
         
         if (allUpdates.Any())
         {
+            context.WriteLine("Sending Discord notifications...");
             try
             {
                 await _notificationService.SendWikiUpdatesAsync(allUpdates);
@@ -209,8 +228,11 @@ public class OsrsWikiSyncJob : IHangfireJob
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send Discord Wiki notifications");
+                context.WriteLine("Failed to send Discord notification.");
             }
         }
+
+        context.WriteLine("Job finished.");
     }
     
     private void InitializeUserData(OldschoolRunescapeUser user, OsrsWikiSyncResponse request)
