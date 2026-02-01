@@ -3,6 +3,7 @@ using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.EntityFramework;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using GLaDOS.OldschoolRunescape.Requests;
+using GLaDOS.OldschoolRunescape.Responses;
 using GLaDOS.Scheduler.Application.Hangfire.Contracts;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.Extensions.OldschoolRunescape;
@@ -71,13 +72,32 @@ public class HiscoreJob : IHangfireJob
             }
 
             _logger.LogInformation("Fetching hiscores for user: {Username}", user.Username);
-
-            var freshData = await _client.GetHiScoresByUsernameAsync(new OldschoolRunescapeHiscoreRequest { Username = user.Username }, cancellationToken);
-
             context.WriteLine($"Processing user: {user.Username}...");
+            
+            OldschoolRunescapeHiscoreResponse? freshData;
+
+            try
+            {
+                freshData = await _client.GetHiScoresByUsernameAsync(
+                    new OldschoolRunescapeHiscoreRequest { Username = user.Username }, 
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                context.SetTextColor(ConsoleTextColor.Red);
+                context.WriteLine($"[Error] Failed to fetch hiscores for {user.Username}: {ex.Message}");
+                context.ResetTextColor();
+
+                _logger.LogError(ex, "Failed to fetch hiscores for {Username}", user.Username);
+                throw; 
+            }
             
             if (freshData == null)
             {
+                context.SetTextColor(ConsoleTextColor.Yellow);
+                context.WriteLine($"[Warning] User '{user.Username}' not found in hiscores.");
+                context.ResetTextColor();
+    
                 _logger.LogWarning("User '{Username}' not found in hiscores.", user.Username);
                 continue;
             }
