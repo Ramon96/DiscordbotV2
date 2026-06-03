@@ -24,6 +24,7 @@ builder.Services.AddTransient<HiscoreCalculator>();
 builder.Services.AddTransient<HiscoreJob>();
 builder.Services.AddTransient<OsrsWikiSyncJob>();
 builder.Services.AddTransient<OsrsPriceFetcherJob>();
+builder.Services.AddTransient<OsrsItemMappingJob>();
 
 builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
 {
@@ -87,12 +88,20 @@ if (runRecurringJobs)
         "fetch-osrs-prices",
         job => job.ExecuteAsync(null, CancellationToken.None),
         "*/5 * * * *");
+
+    RecurringJob.AddOrUpdate<OsrsItemMappingJob>(
+        "sync-item-mappings",
+        job => job.ExecuteAsync(null, CancellationToken.None),
+        Cron.Daily);
+
+    BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
 }
 else
 {
     RecurringJob.RemoveIfExists("sync-hiscores");
     RecurringJob.RemoveIfExists("sync-osrs-wiki");
     RecurringJob.RemoveIfExists("fetch-osrs-prices");
+    RecurringJob.RemoveIfExists("sync-item-mappings");
 
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>
@@ -112,6 +121,13 @@ else
     app.MapPost("/jobs/osrsprices/trigger", (HttpContext _) =>
         {
             var id = BackgroundJob.Enqueue<OsrsPriceFetcherJob>(job => job.ExecuteAsync(null, CancellationToken.None));
+            return Results.Accepted($"/hangfire/jobs/details/{id}");
+        })
+        .WithTags("Jobs");
+
+    app.MapPost("/jobs/itemmappings/trigger", (HttpContext _) =>
+        {
+            var id = BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
             return Results.Accepted($"/hangfire/jobs/details/{id}");
         })
         .WithTags("Jobs");

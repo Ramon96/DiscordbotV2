@@ -28,4 +28,18 @@ public class OsrsPriceClient : IOsrsPriceClient
 
         return priceResponse;
     }
+
+    public async Task<List<OsrsMappingEntry>> GetItemMappingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync("/api/v1/osrs/mapping", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        var mappings = JsonSerializer.Deserialize<List<OsrsMappingEntry>>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        return mappings ?? [];
+    }
 }
