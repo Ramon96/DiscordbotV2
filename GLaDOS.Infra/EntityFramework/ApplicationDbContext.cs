@@ -1,5 +1,6 @@
 ﻿using GLaDOS.Domain.Discord;
 using GLaDOS.Domain.OldschoolRunescape;
+using GLaDOS.Domain.OsrsFlipping;
 using Microsoft.EntityFrameworkCore;
 
 namespace GLaDOS.Infra.EntityFramework;
@@ -15,6 +16,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<OldschoolRunescapeUser> OldschoolRunescapeUsers { get; set; }
     public DbSet<OldschoolRunescapeStat> OldschoolRunescapeStats { get; set; }
     public DbSet<OldschoolRunescapeActivity> OldschoolRunescapeActivities { get; set; }
+    public DbSet<OsrsItemMapping> OsrsItemMappings { get; set; }
+    public DbSet<OsrsPriceSnapshot> OsrsPriceSnapshots { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

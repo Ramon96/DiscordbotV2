@@ -2,6 +2,8 @@ using GLaDOS.Infra.EntityFramework;
 using GLaDOS.Scheduler.Application;
 using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
+using GLaDOS.Scheduler.Application.OsrsFlipping;
+using GLaDOS.Scheduler.Application.OsrsFlipping.Clients;
 using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -21,6 +23,15 @@ builder.Services.AddCoreServices(builder.Configuration);
 builder.Services.AddTransient<HiscoreCalculator>();
 builder.Services.AddTransient<HiscoreJob>();
 builder.Services.AddTransient<OsrsWikiSyncJob>();
+builder.Services.AddTransient<OsrsPriceFetcherJob>();
+
+builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
+{
+    client.BaseAddress = new Uri("https://prices.runescape.wiki/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Add("User-Agent", "@MyDiscordBot - Market Analyzer Project");
+});
 
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -71,11 +82,17 @@ if (runRecurringJobs)
         "sync-osrs-wiki",
         job => job.ExecuteAsync(null, CancellationToken.None),
         Cron.Hourly);
+
+    RecurringJob.AddOrUpdate<OsrsPriceFetcherJob>(
+        "fetch-osrs-prices",
+        job => job.ExecuteAsync(null, CancellationToken.None),
+        "*/5 * * * *");
 }
 else
 {
     RecurringJob.RemoveIfExists("sync-hiscores");
     RecurringJob.RemoveIfExists("sync-osrs-wiki");
+    RecurringJob.RemoveIfExists("fetch-osrs-prices");
 
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>
@@ -88,6 +105,13 @@ else
     app.MapPost("/jobs/osrswiki/trigger", (HttpContext _) =>
         {
             var id = BackgroundJob.Enqueue<OsrsWikiSyncJob>(job => job.ExecuteAsync(null, CancellationToken.None));
+            return Results.Accepted($"/hangfire/jobs/details/{id}");
+        })
+        .WithTags("Jobs");
+
+    app.MapPost("/jobs/osrsprices/trigger", (HttpContext _) =>
+        {
+            var id = BackgroundJob.Enqueue<OsrsPriceFetcherJob>(job => job.ExecuteAsync(null, CancellationToken.None));
             return Results.Accepted($"/hangfire/jobs/details/{id}");
         })
         .WithTags("Jobs");
