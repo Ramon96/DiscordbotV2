@@ -2,9 +2,11 @@
 using Discord.WebSocket;
 using Glados.Discord.Services.Contracts;
 using GLaDOS.Domain.OldschoolRunescape;
+using GLaDOS.Infra.EntityFramework;
 using GLaDOS.Infra.Repositories.Contracts;
 using GLaDOS.OldschoolRunescape.Clients.Contracts;
 using GLaDOS.OldschoolRunescape.Requests;
+using GLaDOS.OldschoolRunescape.Responses;
 using GLaDOS.OldschoolRunescape.Specifications;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -80,6 +82,56 @@ public class ConnectOsrsUser : IDiscordCommand
         };
 
         await repository.AddAsync(osrsUser, cancellationToken);
+
+        // Save initial stats + activities from hiscores, plus first snapshot for recaps
+        var snapshotDate = DateTime.UtcNow.Date;
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var stats = hiscoreData.Skills.Select(s => new OldschoolRunescapeStat
+        {
+            OldschoolRunescapeUserId = osrsUser.Id,
+            SkillId = s.Id,
+            Name = s.Name,
+            Level = s.Level,
+            Experience = s.Xp,
+            Rank = s.Rank
+        }).ToList();
+
+        var activities = hiscoreData.Activities.Select(a => new OldschoolRunescapeActivity
+        {
+            OldschoolRunescapeUserId = osrsUser.Id,
+            ActivityId = a.Id,
+            Name = a.Name,
+            Score = a.Score,
+            Rank = a.Rank
+        }).ToList();
+
+        var statSnapshots = stats.Select(stat => new OldschoolRunescapeStatsSnapshot
+        {
+            OldschoolRunescapeUserId = osrsUser.Id,
+            SnapshotDate = snapshotDate,
+            SkillId = stat.SkillId,
+            Name = stat.Name,
+            Level = stat.Level,
+            Experience = stat.Experience,
+            Rank = stat.Rank
+        }).ToList();
+
+        var activitySnapshots = activities.Select(act => new OldschoolRunescapeActivitySnapshot
+        {
+            OldschoolRunescapeUserId = osrsUser.Id,
+            SnapshotDate = snapshotDate,
+            ActivityId = act.ActivityId,
+            Name = act.Name,
+            Score = act.Score,
+            Rank = act.Rank
+        }).ToList();
+
+        dbContext.Set<OldschoolRunescapeStat>().AddRange(stats);
+        dbContext.Set<OldschoolRunescapeActivity>().AddRange(activities);
+        dbContext.Set<OldschoolRunescapeStatsSnapshot>().AddRange(statSnapshots);
+        dbContext.Set<OldschoolRunescapeActivitySnapshot>().AddRange(activitySnapshots);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         await command.RespondAsync(
             $"Linked `{osrsUsername}` to <@{socketUser.Id}>.",

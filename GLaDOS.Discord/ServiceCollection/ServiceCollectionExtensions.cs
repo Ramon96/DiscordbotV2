@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IDiscordCommand, ConnectOsrsUser>()
             .AddSingleton<IDiscordCommand, NameChangeOsrsUser>()
             .AddSingleton<IDiscordCommand, OsrsFlipsCommand>()
+            .AddSingleton<IDiscordCommand, LookupCommand>()
             .AddHostedService<CommandHandlerService>()
             .AddHostedService<DiscordClient>();
 

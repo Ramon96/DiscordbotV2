@@ -25,6 +25,7 @@ builder.Services.AddTransient<HiscoreJob>();
 builder.Services.AddTransient<OsrsWikiSyncJob>();
 builder.Services.AddTransient<OsrsPriceFetcherJob>();
 builder.Services.AddTransient<OsrsItemMappingJob>();
+builder.Services.AddTransient<StatsSnapshotJob>();
 
 builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
 {
@@ -94,6 +95,11 @@ if (runRecurringJobs)
         job => job.ExecuteAsync(null, CancellationToken.None),
         Cron.Daily);
 
+    RecurringJob.AddOrUpdate<StatsSnapshotJob>(
+        "stats-snapshot",
+        job => job.ExecuteAsync(null, CancellationToken.None),
+        Cron.Daily);
+
     BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
 }
 else
@@ -102,6 +108,7 @@ else
     RecurringJob.RemoveIfExists("sync-osrs-wiki");
     RecurringJob.RemoveIfExists("fetch-osrs-prices");
     RecurringJob.RemoveIfExists("sync-item-mappings");
+    RecurringJob.RemoveIfExists("stats-snapshot");
 
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>

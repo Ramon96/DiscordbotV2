@@ -18,6 +18,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<OldschoolRunescapeActivity> OldschoolRunescapeActivities { get; set; }
     public DbSet<OsrsItemMapping> OsrsItemMappings { get; set; }
     public DbSet<OsrsPriceSnapshot> OsrsPriceSnapshots { get; set; }
+    public DbSet<OldschoolRunescapeStatsSnapshot> OldschoolRunescapeStatsSnapshots { get; set; }
+    public DbSet<OldschoolRunescapeActivitySnapshot> OldschoolRunescapeActivitySnapshots { get; set; }
+    public DbSet<OldschoolRunescapeLookup> OldschoolRunescapeLookups { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
