@@ -53,8 +53,8 @@ public class FlippingController : ControllerBase
                 var avgBuyPrice = s.AvgBuyPrice;
                 var avgSellPrice = s.AvgSellPrice;
 
-                    var grossMargin = avgSellPrice - avgBuyPrice;
-                var tax = (long)(avgSellPrice * 0.02);
+                    var grossMargin = avgBuyPrice - avgSellPrice;
+                var tax = (long)(avgBuyPrice * 0.02);
                 var netProfit = grossMargin - tax;
 
                 return new FlippingOpportunityDto
@@ -71,7 +71,7 @@ public class FlippingController : ControllerBase
                     LastUpdated = s.Timestamp
                 };
             })
-            .Where(o => o.NetProfit > minNetProfit && o.Volume > minVolume)
+            .Where(o => o.AvgBuyPrice > 0 && o.AvgSellPrice > 0 && o.NetProfit > minNetProfit && o.Volume > minVolume)
             .OrderByDescending(o => o.NetProfit)
             .ToList();
 

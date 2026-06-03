@@ -53,8 +53,8 @@ public class OsrsPriceFetcherJob : IHangfireJob
                 continue;
             }
 
-            var avgBuyPrice = priceData.AvgLowPrice ?? 0;
-            var avgSellPrice = priceData.AvgHighPrice ?? 0;
+            var avgBuyPrice = priceData.AvgHighPrice ?? 0;
+            var avgSellPrice = priceData.AvgLowPrice ?? 0;
             var volume = priceData.HighPriceVolume + priceData.LowPriceVolume;
 
             if (avgBuyPrice <= 0 && avgSellPrice <= 0)
