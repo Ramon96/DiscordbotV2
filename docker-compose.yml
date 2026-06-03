@@ -30,6 +30,7 @@ services:
       - Discord__OldschoolRunescapeChannelId=${DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID}
       - Hangfire__Username=${HANGFIRE_USERNAME}
       - Hangfire__Password=${HANGFIRE_PASSWORD}
+      - OpenCode__ApiKey=${OPENCODE_APIKEY}
     ports:
       - "8080:8080"
     restart: unless-stopped
