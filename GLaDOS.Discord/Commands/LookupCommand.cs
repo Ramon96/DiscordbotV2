@@ -47,9 +47,8 @@ public class LookupCommand : IDiscordCommand
         return new SlashCommandBuilder()
             .WithName(Name)
             .WithDescription("Get an OSRS player recap: top XP gains and boss KC increases over a period")
-            .AddOption("username", ApplicationCommandOptionType.String, "The OSRS username to look up", isRequired: true)
+            .AddOption("username", ApplicationCommandOptionType.String, "The OSRS username to look up", isRequired: true, isAutocomplete: true)
             .AddOption(periodOption)
-            .AddOption("include-analysis", ApplicationCommandOptionType.Boolean, "Include an observant roast of the player's progress (default: true)", isRequired: false)
             .Build();
     }
 
@@ -60,7 +59,6 @@ public class LookupCommand : IDiscordCommand
         var username = command.Data.Options.FirstOrDefault(o => o.Name == "username")?.Value as string;
         var periodWeeks = GetOptionLong(command, "period", 4);
         periodWeeks = periodWeeks switch { 1 => 1, 2 => 2, _ => 4 };
-        var includeAnalysis = GetOptionBool(command, "include-analysis", true);
 
         if (string.IsNullOrWhiteSpace(username))
         {
@@ -175,22 +173,19 @@ public class LookupCommand : IDiscordCommand
 
         await command.ModifyOriginalResponseAsync(props => props.Embed = embed);
 
-        if (includeAnalysis)
-        {
-            var aiRoast = await GetAiRoastAsync(user.Username, (int)periodWeeks, xpGains, kcIncreases, cancellationToken);
+        var aiRoast = await GetAiRoastAsync(user.Username, (int)periodWeeks, xpGains, kcIncreases, cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(aiRoast))
+        if (!string.IsNullOrWhiteSpace(aiRoast))
+        {
+            var chunks = SplitMessage(aiRoast, 1900);
+            foreach (var chunk in chunks)
             {
-                var chunks = SplitMessage(aiRoast, 1900);
-                foreach (var chunk in chunks)
-                {
-                    await command.FollowupAsync(text: chunk);
-                }
+                await command.FollowupAsync(text: chunk);
             }
-            else
-            {
-                await command.FollowupAsync(text: "_Observations temporarily unavailable. The test chamber's communication relay appears to be malfunctioning._");
-            }
+        }
+        else
+        {
+            await command.FollowupAsync(text: "_Observations temporarily unavailable. The test chamber's communication relay appears to be malfunctioning._");
         }
     }
 
@@ -281,13 +276,6 @@ public class LookupCommand : IDiscordCommand
     {
         var option = command.Data.Options.FirstOrDefault(o => o.Name == name);
         if (option?.Value is long l) return l;
-        return defaultValue;
-    }
-
-    private static bool GetOptionBool(SocketSlashCommand command, string name, bool defaultValue)
-    {
-        var option = command.Data.Options.FirstOrDefault(o => o.Name == name);
-        if (option?.Value is bool b) return b;
         return defaultValue;
     }
 

@@ -34,11 +34,10 @@ public class OsrsFlipsCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Get top OSRS Grand Exchange flipping opportunities with optional AI analysis")
+            .WithDescription("Get top OSRS Grand Exchange flipping opportunities with AI analysis")
             .AddOption("limit", ApplicationCommandOptionType.Integer, "Number of opportunities (1-10, default: 5)", isRequired: false)
             .AddOption("min-profit", ApplicationCommandOptionType.Integer, "Minimum net profit in gp (default: 0)", isRequired: false)
             .AddOption("min-volume", ApplicationCommandOptionType.Integer, "Minimum 24h volume (default: 0)", isRequired: false)
-            .AddOption("include-analysis", ApplicationCommandOptionType.Boolean, "Include AI analysis (default: true)", isRequired: false)
             .Build();
     }
 
@@ -49,7 +48,6 @@ public class OsrsFlipsCommand : IDiscordCommand
         var limit = (int)Math.Clamp(GetOptionLong(command, "limit", 5), 1, 10);
         var minProfit = GetOptionLong(command, "min-profit", 0);
         var minVolume = GetOptionLong(command, "min-volume", 0);
-        var includeAnalysis = GetOptionBool(command, "include-analysis", true);
 
         using var scope = _services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -70,22 +68,19 @@ public class OsrsFlipsCommand : IDiscordCommand
 
         await command.FollowupAsync(embed: flipsEmbed);
 
-        if (includeAnalysis)
-        {
-            var aiAnalysis = await GetAiAnalysisAsync(opportunities, cancellationToken);
+        var aiAnalysis = await GetAiAnalysisAsync(opportunities, cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(aiAnalysis))
+        if (!string.IsNullOrWhiteSpace(aiAnalysis))
+        {
+            var chunks = SplitMessage(aiAnalysis, 1900);
+            foreach (var chunk in chunks)
             {
-                var chunks = SplitMessage(aiAnalysis, 1900);
-                foreach (var chunk in chunks)
-                {
-                    await command.FollowupAsync(text: chunk);
-                }
+                await command.FollowupAsync(text: chunk);
             }
-            else
-            {
-                await command.FollowupAsync(text: "_AI analysis is currently unavailable. Make sure the OpenCode API key is configured._");
-            }
+        }
+        else
+        {
+            await command.FollowupAsync(text: "_AI analysis is currently unavailable. Make sure the OpenCode API key is configured._");
         }
     }
 
@@ -93,13 +88,6 @@ public class OsrsFlipsCommand : IDiscordCommand
     {
         var option = command.Data.Options.FirstOrDefault(o => o.Name == name);
         if (option?.Value is long l) return l;
-        return defaultValue;
-    }
-
-    private static bool GetOptionBool(SocketSlashCommand command, string name, bool defaultValue)
-    {
-        var option = command.Data.Options.FirstOrDefault(o => o.Name == name);
-        if (option?.Value is bool b) return b;
         return defaultValue;
     }
 
