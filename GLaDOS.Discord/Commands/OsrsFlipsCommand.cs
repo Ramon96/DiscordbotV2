@@ -36,8 +36,8 @@ public class OsrsFlipsCommand : IDiscordCommand
             .WithName(Name)
             .WithDescription("Get top OSRS Grand Exchange flipping opportunities with optional AI analysis")
             .AddOption("limit", ApplicationCommandOptionType.Integer, "Number of opportunities (1-10, default: 5)", isRequired: false)
-            .AddOption("min-profit", ApplicationCommandOptionType.Integer, "Minimum net profit in gp (default: 100k)", isRequired: false)
-            .AddOption("min-volume", ApplicationCommandOptionType.Integer, "Minimum 24h volume (default: 200)", isRequired: false)
+            .AddOption("min-profit", ApplicationCommandOptionType.Integer, "Minimum net profit in gp (default: 0)", isRequired: false)
+            .AddOption("min-volume", ApplicationCommandOptionType.Integer, "Minimum 24h volume (default: 0)", isRequired: false)
             .AddOption("include-analysis", ApplicationCommandOptionType.Boolean, "Include AI analysis (default: true)", isRequired: false)
             .Build();
     }
@@ -47,8 +47,8 @@ public class OsrsFlipsCommand : IDiscordCommand
         await command.DeferAsync();
 
         var limit = (int)Math.Clamp(GetOptionLong(command, "limit", 5), 1, 10);
-        var minProfit = GetOptionLong(command, "min-profit", 100_000);
-        var minVolume = GetOptionLong(command, "min-volume", 200);
+        var minProfit = GetOptionLong(command, "min-profit", 0);
+        var minVolume = GetOptionLong(command, "min-volume", 0);
         var includeAnalysis = GetOptionBool(command, "include-analysis", true);
 
         using var scope = _services.CreateScope();
