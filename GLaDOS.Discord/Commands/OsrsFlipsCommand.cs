@@ -64,9 +64,9 @@ public class OsrsFlipsCommand : IDiscordCommand
         }
 
         var lastUpdated = opportunities[0].LastUpdated;
-        var unixTimestamp = new DateTimeOffset(lastUpdated, TimeSpan.Zero).ToUnixTimeSeconds();
+        var lastUpdatedDto = new DateTimeOffset(lastUpdated, TimeSpan.Zero);
 
-        var flipsEmbed = BuildFlipsEmbed(opportunities, unixTimestamp);
+        var flipsEmbed = BuildFlipsEmbed(opportunities, lastUpdatedDto);
 
         await command.FollowupAsync(embed: flipsEmbed);
 
@@ -150,7 +150,7 @@ public class OsrsFlipsCommand : IDiscordCommand
             .ToList();
     }
 
-    private static Embed BuildFlipsEmbed(List<FlippingOpportunityDto> opportunities, long unixTimestamp)
+    private static Embed BuildFlipsEmbed(List<FlippingOpportunityDto> opportunities, DateTimeOffset lastUpdated)
     {
         var sb = new StringBuilder();
         var medals = new[] { ":first_place:", ":second_place:", ":third_place:", "4.", "5.", "6.", "7.", "8.", "9.", "10." };
@@ -165,12 +165,13 @@ public class OsrsFlipsCommand : IDiscordCommand
             if (i < opportunities.Count - 1) sb.AppendLine();
         }
 
+        sb.AppendLine($"\n*Prices fetched <t:{lastUpdated.ToUnixTimeSeconds()}:R>*");
+
         return new EmbedBuilder()
             .WithTitle(":coin: OSRS Flipping Opportunities")
             .WithDescription(sb.ToString())
             .WithColor(Color.Gold)
-            .WithFooter($"Data fetched <t:{unixTimestamp}:R>  •  <t:{unixTimestamp}:f>")
-            .WithCurrentTimestamp()
+            .WithTimestamp(lastUpdated)
             .Build();
     }
 

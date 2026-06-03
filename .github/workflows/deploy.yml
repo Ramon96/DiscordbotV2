@@ -18,11 +18,12 @@ jobs:
           DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID: ${{ secrets.DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID }}
           HANGFIRE_USERNAME: ${{ secrets.HANGFIRE_USERNAME }}
           HANGFIRE_PASSWORD: ${{ secrets.HANGFIRE_PASSWORD }}
+          OPENCODE_APIKEY: ${{ secrets.OPENCODE_APIKEY }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: POSTGRES_PASSWORD,DISCORD_TOKEN,DISCORD_GUILD_ID,DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID,HANGFIRE_USERNAME,HANGFIRE_PASSWORD
+          envs: POSTGRES_PASSWORD,DISCORD_TOKEN,DISCORD_GUILD_ID,DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID,HANGFIRE_USERNAME,HANGFIRE_PASSWORD,OPENCODE_APIKEY
           port: 22
           script: |
             cd /root/DiscordbotV2
@@ -39,6 +40,7 @@ jobs:
             echo "DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID=$DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID" >> .env
             echo "HANGFIRE_USERNAME=$HANGFIRE_USERNAME" >> .env
             echo "HANGFIRE_PASSWORD=$HANGFIRE_PASSWORD" >> .env
+            echo "OPENCODE_APIKEY=$OPENCODE_APIKEY" >> .env
 
             docker-compose up --build -d
             docker image prune -f
