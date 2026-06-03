@@ -208,10 +208,13 @@ public class OsrsFlipsCommand : IDiscordCommand
             };
 
             var json = JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            content.Headers.Add("Authorization", $"Bearer {apiKey}");
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+            httpRequest.Headers.Add("Authorization", $"Bearer {apiKey}");
 
-            var response = await _aiClient.PostAsync("chat/completions", content, ct);
+            var response = await _aiClient.SendAsync(httpRequest, ct);
 
             if (!response.IsSuccessStatusCode)
                 return null;
