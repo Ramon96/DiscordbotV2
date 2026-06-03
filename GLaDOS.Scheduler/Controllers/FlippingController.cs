@@ -53,8 +53,8 @@ public class FlippingController : ControllerBase
                 var avgBuyPrice = s.AvgBuyPrice;
                 var avgSellPrice = s.AvgSellPrice;
 
-                var grossMargin = avgBuyPrice - avgSellPrice;
-                var tax = (long)(avgBuyPrice * 0.02);
+                    var grossMargin = avgSellPrice - avgBuyPrice;
+                var tax = (long)(avgSellPrice * 0.02);
                 var netProfit = grossMargin - tax;
 
                 return new FlippingOpportunityDto
