@@ -6,6 +6,7 @@ COPY ["GLaDOS.Scheduler/GLaDOS.Scheduler.csproj", "GLaDOS.Scheduler/"]
 COPY ["GLaDOS.Core/GLaDOS.Core.csproj", "GLaDOS.Core/"]
 COPY ["GLaDOS.Infra/GLaDOS.Infra.csproj", "GLaDOS.Infra/"]
 COPY ["GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj", "GLaDOS.OldschoolRunescape/"]
+COPY ["GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj", "GLaDOS.OsrsWiki/"]
 
 RUN dotnet restore "GLaDOS.Discord/GLaDOS.Discord.csproj"
 RUN dotnet restore "GLaDOS.Scheduler/GLaDOS.Scheduler.csproj"
