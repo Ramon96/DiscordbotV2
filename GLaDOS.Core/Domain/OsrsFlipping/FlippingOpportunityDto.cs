@@ -1,4 +1,4 @@
-namespace GLaDOS.Scheduler.Application.OsrsFlipping;
+namespace GLaDOS.Domain.OsrsFlipping;
 
 public class FlippingOpportunityDto
 {

@@ -1,6 +1,5 @@
 using GLaDOS.Domain.OsrsFlipping;
 using GLaDOS.Infra.EntityFramework;
-using GLaDOS.Scheduler.Application.OsrsFlipping;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
