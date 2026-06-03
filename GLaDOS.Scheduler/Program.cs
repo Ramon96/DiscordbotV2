@@ -30,7 +30,7 @@ builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
     client.BaseAddress = new Uri("https://prices.runescape.wiki/");
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.DefaultRequestHeaders.Add("User-Agent", "@MyDiscordBot - Market Analyzer Project");
+    client.DefaultRequestHeaders.Add("User-Agent", "MyDiscordBot - Market Analyzer Project");
 });
 
 
