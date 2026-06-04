@@ -12,7 +12,8 @@ public partial class FeatureCommand : IDiscordCommand
     private readonly FeatureGuardService _guardService;
     private readonly IConfiguration _configuration;
 
-    private static readonly TimeSpan PerModelTimeout = TimeSpan.FromMinutes(4);
+    private static readonly TimeSpan AbsoluteTimeout = TimeSpan.FromMinutes(14);
+    private static readonly TimeSpan IdleTimeout = TimeSpan.FromMinutes(4);
 
     private class OpencodeHangException : Exception
     {
@@ -226,6 +227,8 @@ public partial class FeatureCommand : IDiscordCommand
     {
         var logPath = Path.Combine(workDir, "opencode.log");
         var logLock = new object();
+        var lastOutputTime = DateTime.UtcNow;
+        var outputReceived = new TaskCompletionSource<bool>();
 
         using var process = new Process
         {
@@ -243,13 +246,32 @@ public partial class FeatureCommand : IDiscordCommand
 
         process.Start();
 
-        var readStdout = ReadAndLogStreamAsync(process.StandardOutput, logPath, logLock, ct);
-        var readStderr = ReadAndLogStreamAsync(process.StandardError, logPath, logLock, ct);
+        var readStdout = ReadAndLogStreamWithHeartbeatAsync(process.StandardOutput, logPath, logLock, () => lastOutputTime = DateTime.UtcNow, outputReceived, ct);
+        var readStderr = ReadAndLogStreamWithHeartbeatAsync(process.StandardError, logPath, logLock, () => lastOutputTime = DateTime.UtcNow, outputReceived, ct);
 
-        var completed = process.WaitForExit((int)PerModelTimeout.TotalMilliseconds);
-        if (!completed)
+        var hung = false;
+        var deadline = DateTime.UtcNow + AbsoluteTimeout;
+
+        while (!process.HasExited && DateTime.UtcNow < deadline && !hung)
+        {
+            var idleDuration = DateTime.UtcNow - lastOutputTime;
+            if (idleDuration > IdleTimeout)
+                hung = true;
+            else
+                await Task.Delay(2000, ct);
+        }
+
+        if (hung)
         {
             process.Kill(entireProcessTree: true);
+            Console.WriteLine($"[Feature] Model {model} hung (idle {(DateTime.UtcNow - lastOutputTime).TotalSeconds:F0}s)");
+            throw new OpencodeHangException(model);
+        }
+
+        if (!process.HasExited)
+        {
+            process.Kill(entireProcessTree: true);
+            Console.WriteLine($"[Feature] Model {model} exceeded absolute timeout");
             throw new OpencodeHangException(model);
         }
 
@@ -259,17 +281,20 @@ public partial class FeatureCommand : IDiscordCommand
         return (process.ExitCode, output, error);
     }
 
-    private static async Task<string> ReadAndLogStreamAsync(StreamReader reader, string logPath, object logLock, CancellationToken ct)
+    private static async Task<string> ReadAndLogStreamWithHeartbeatAsync(StreamReader reader, string logPath, object logLock, Action heartbeat, TaskCompletionSource<bool> outputReceived, CancellationToken ct)
     {
         var sb = new System.Text.StringBuilder();
         var buffer = new char[4096];
 
         while (true)
         {
-            var count = await reader.ReadAsync(buffer, 0, buffer.Length);
-            if (count == 0) break;
+        var count = await reader.ReadAsync(buffer, 0, buffer.Length);
+        if (count == 0) break;
 
-            var chunk = new string(buffer, 0, count);
+        heartbeat();
+        outputReceived.TrySetResult(true);
+
+        var chunk = new string(buffer, 0, count);
             sb.Append(chunk);
 
             lock (logLock)
