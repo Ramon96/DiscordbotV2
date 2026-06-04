@@ -396,23 +396,58 @@ public partial class FeatureCommand : IDiscordCommand
 
     private async Task<List<(string Path, string Content)>?> GenerateCodeAsync(string specJson, List<SpecFile> files, CancellationToken ct)
     {
-        var fileList = string.Join("\n", files.Select(f => $"- {f.Path}: {f.Description}"));
+        var results = new List<(string Path, string Content)>();
+        var failed = new List<string>();
 
-        var prompt = $"""
-            Technical Specification:
-            {specJson}
+        for (var i = 0; i < files.Count; i++)
+        {
+            var file = files[i];
 
-            Generate code for each of these files:
-            {fileList}
+            var prompt = $"""
+                Spec:
+                {specJson}
 
-            Output each file in the EXACT format specified.
-            """;
+                Write ONLY the code for: {file.Path}
+                Description: {file.Description}
 
-        var response = await _aiService.SendAsync(CodeSystemPrompt, prompt, CodeModel, maxTokens: 4000, temperature: 0.3, ct: ct);
+                Output ONLY the file:
+                ### FILE: {file.Path}
+                ```csharp
+                code
+                ```
+                """;
 
-        if (response is null) return null;
+            Console.WriteLine($"[Feature] Generating code for file {i + 1}/{files.Count}: {file.Path}");
+            var response = await _aiService.SendAsync(CodeSystemPrompt, prompt, CodeModel, maxTokens: 3000, temperature: 0.3, ct: ct);
 
-        return ParseCodeFiles(response);
+            if (response is null)
+            {
+                var reason = _aiService.LastError ?? "no response";
+                Console.WriteLine($"[Feature] Failed to generate {file.Path}: {reason}");
+                failed.Add($"{file.Path} ({reason})");
+                continue;
+            }
+
+            var parsed = ParseCodeFiles(response);
+            if (parsed.Count == 0)
+            {
+                Console.WriteLine($"[Feature] No code found in response for {file.Path}");
+                failed.Add($"{file.Path} (no code in response)");
+                continue;
+            }
+
+            var match = parsed.FirstOrDefault(p => p.Path.Equals(file.Path, StringComparison.OrdinalIgnoreCase));
+            results.Add(match.Path != null ? match : (file.Path, parsed[0].Content));
+        }
+
+        if (failed.Count > 0)
+        {
+            var lastErr = _aiService.LastError ?? "timeout";
+            Console.WriteLine($"[Feature] Code gen failed for {failed.Count}/{files.Count} file(s): {string.Join("; ", failed)}");
+            return null;
+        }
+
+        return results;
     }
 
     private static string ExtractJson(string text)
