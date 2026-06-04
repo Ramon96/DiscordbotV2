@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IDiscordClient, DiscordClient>()
             .AddSingleton<DiscordNotificationService>()
             .AddScoped<IDiscordUserService, DiscordUserService>()
+            .AddSingleton<AIService>()
             .AddSingleton<GitHubService>()
             .AddSingleton<FeatureGuardService>()
             .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()
@@ -34,12 +35,6 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IDiscordCommand, FeatureCommand>()
             .AddHostedService<CommandHandlerService>()
             .AddHostedService<DiscordClient>();
-
-        services.AddHttpClient<AIService>(client =>
-        {
-            client.BaseAddress = new Uri("https://opencode.ai/zen/v1/");
-            client.Timeout = TimeSpan.FromSeconds(120);
-        });
 
         return collection;
     }

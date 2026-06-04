@@ -6,12 +6,16 @@ namespace Glados.Discord.AI;
 
 public class AIService
 {
-    private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
 
-    public AIService(HttpClient httpClient, IConfiguration configuration)
+    private static readonly HttpClient _httpClient = new()
     {
-        _httpClient = httpClient;
+        BaseAddress = new Uri("https://opencode.ai/zen/v1/"),
+        Timeout = TimeSpan.FromSeconds(120)
+    };
+
+    public AIService(IConfiguration configuration)
+    {
         _configuration = configuration;
     }
 
@@ -25,7 +29,10 @@ public class AIService
     {
         var apiKey = _configuration["OpenCode:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            Console.WriteLine("AI request skipped: OpenCode:ApiKey not configured.");
             return null;
+        }
 
         var requestBody = new
         {
@@ -51,7 +58,11 @@ public class AIService
             var response = await _httpClient.SendAsync(httpRequest, ct);
 
             if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                Console.WriteLine($"AI request returned {(int)response.StatusCode}: {errorBody[..Math.Min(errorBody.Length, 200)]}");
                 return null;
+            }
 
             var responseJson = await response.Content.ReadAsStringAsync(ct);
             using var doc = JsonDocument.Parse(responseJson);
@@ -63,9 +74,19 @@ public class AIService
 
             return content;
         }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"AI request network error: {ex.Message}");
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            Console.WriteLine("AI request timed out.");
+            return null;
+        }
         catch (Exception ex)
         {
-            Console.WriteLine($"AI request failed: {ex.Message}");
+            Console.WriteLine($"AI request failed: {ex.GetType().Name}: {ex.Message}");
             return null;
         }
     }
