@@ -12,7 +12,7 @@ public partial class FeatureCommand : IDiscordCommand
     private readonly FeatureGuardService _guardService;
     private readonly IConfiguration _configuration;
 
-    private static readonly TimeSpan OpencodeTimeout = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan OpencodeTimeout = TimeSpan.FromMinutes(14);
 
     public FeatureCommand(FeatureGuardService guardService, IConfiguration configuration)
     {
@@ -59,7 +59,7 @@ public partial class FeatureCommand : IDiscordCommand
         }
 
         await command.ModifyOriginalResponseAsync(props =>
-            props.Content = $"Working on your feature... (this may take a few minutes)\n\n> {description}");
+            props.Content = $"Working on your feature... (may take up to 14 minutes for complex requests)\n\n> {description}");
 
         var prompt = BuildPrompt(description);
 
@@ -89,7 +89,7 @@ public partial class FeatureCommand : IDiscordCommand
             {
                 process.Kill(entireProcessTree: true);
                 await command.ModifyOriginalResponseAsync(props =>
-                    props.Content = "Timed out after 10 minutes. The feature might be too complex — try breaking it into smaller pieces.");
+                    props.Content = "Timed out after 14 minutes. The feature might be too complex — try breaking it into smaller pieces, like:\n1. First: just the database model and daily job\n2. Then: the slash commands in a separate request");
                 return;
             }
 
