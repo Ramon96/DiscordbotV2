@@ -12,7 +12,12 @@ public partial class FeatureCommand : IDiscordCommand
     private readonly FeatureGuardService _guardService;
     private readonly IConfiguration _configuration;
 
-    private static readonly TimeSpan OpencodeTimeout = TimeSpan.FromMinutes(14);
+    private static readonly TimeSpan PerModelTimeout = TimeSpan.FromMinutes(4);
+
+    private class OpencodeHangException : Exception
+    {
+        public OpencodeHangException(string model) : base($"Model '{model}' hung (no response).") { }
+    }
     private static readonly SemaphoreSlim ConcurrencyGate = new(2, 2);
 
     private const string RepoUrl = "https://github.com/ramon96/DiscordbotV2.git";
@@ -94,8 +99,7 @@ public partial class FeatureCommand : IDiscordCommand
             {
                 var message = ex switch
                 {
-                    TimeoutException => $"Feature request timed out after 14 minutes. Try breaking it into smaller pieces.",
-                    InvalidOperationException when IsProviderError(ex.Message) => $"The AI provider is temporarily unavailable. Please try again in a minute — the free tier occasionally gets busy.",
+                    OpencodeHangException => $"All AI models hung/stalled. The free tier may be overloaded — try again in a few minutes.",
                     _ => $"Failed to run feature request: {ex.Message}"
                 };
                 await ModifyOriginalResponseAsync(command, message);
@@ -134,8 +138,8 @@ public partial class FeatureCommand : IDiscordCommand
 
     private static readonly string[] FallbackModels =
     [
-        "opencode/nemotron-3-ultra-free",
         "opencode/deepseek-v4-flash-free",
+        "opencode/nemotron-3-ultra-free",
         "opencode/mimo-v2.5-free"
     ];
 
@@ -155,7 +159,23 @@ public partial class FeatureCommand : IDiscordCommand
 
             Console.WriteLine($"[Feature] Trying model: {model}");
 
-            var (exitCode, output, error) = await RunOpencodeProcessAsync(workDir, prompt, model, ct);
+            string output, error;
+            int exitCode;
+
+            try
+            {
+                (exitCode, output, error) = await RunOpencodeProcessAsync(workDir, prompt, model, ct);
+            }
+            catch (OpencodeHangException hangEx)
+            {
+                Console.WriteLine($"[Feature] {hangEx.Message}");
+                if (modelsToTry.Count > 0)
+                {
+                    Console.WriteLine("[Feature] Switching to next model...");
+                    continue;
+                }
+                throw;
+            }
 
             Console.WriteLine($"[Feature] opencode exit={exitCode} model={model}");
             Console.WriteLine($"[Feature] stdout={output[..Math.Min(output.Length, 500)]}");
@@ -226,11 +246,11 @@ public partial class FeatureCommand : IDiscordCommand
         var readStdout = ReadAndLogStreamAsync(process.StandardOutput, logPath, logLock, ct);
         var readStderr = ReadAndLogStreamAsync(process.StandardError, logPath, logLock, ct);
 
-        var completed = process.WaitForExit((int)OpencodeTimeout.TotalMilliseconds);
+        var completed = process.WaitForExit((int)PerModelTimeout.TotalMilliseconds);
         if (!completed)
         {
             process.Kill(entireProcessTree: true);
-            throw new TimeoutException("Timed out after 14 minutes. Try breaking the feature into smaller pieces.");
+            throw new OpencodeHangException(model);
         }
 
         var output = await readStdout;
