@@ -33,13 +33,16 @@ public static class ServiceCollectionExtensions
 
         var commandType = typeof(IDiscordCommand);
         var commandTypes = Assembly.GetExecutingAssembly().GetTypes()
-            .Where(t => t is { IsAbstract: false, IsInterface: false } && commandType.IsAssignableFrom(t));
+            .Where(t => t is { IsAbstract: false, IsInterface: false } && commandType.IsAssignableFrom(t))
+            .ToList();
 
+        Console.WriteLine($"Auto-discovering IDiscordCommand implementations...");
         foreach (var type in commandTypes)
         {
-            Console.WriteLine($"Auto-registered command: {type.Name}");
+            Console.WriteLine($"  Registered: {type.Name}");
             services.AddSingleton(typeof(IDiscordCommand), type);
         }
+        Console.WriteLine($"Discovered {commandTypes.Count} command(s).");
 
         return collection;
     }
