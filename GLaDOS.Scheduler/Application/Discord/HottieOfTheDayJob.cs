@@ -33,10 +33,20 @@ public class HottieOfTheDayJob : IHangfireJob
     {
         _logger.LogInformation("Starting Hottie of the Day job");
 
+        if (_discord.ConnectionState != global::Discord.ConnectionState.Connected)
+        {
+            _logger.LogWarning("Discord client not connected (state: {State}), skipping", _discord.ConnectionState);
+            context.SetTextColor(ConsoleTextColor.Red);
+            context.WriteLine($"Discord not connected (state: {_discord.ConnectionState})");
+            context.ResetTextColor();
+            return;
+        }
+
         var guild = _discord.Guilds.FirstOrDefault();
         if (guild == null)
         {
             _logger.LogWarning("No guild available, skipping hottie selection");
+            context.WriteLine("No guild found.");
             return;
         }
 
@@ -44,9 +54,13 @@ public class HottieOfTheDayJob : IHangfireJob
             .Where(u => !u.IsBot && !u.IsWebhook)
             .ToList();
 
+        _logger.LogInformation("Guild has {Total} users, {Eligible} eligible (non-bot)", guild.Users.Count, members.Count);
+        context.WriteLine($"Guild: {guild.Name} ({guild.Users.Count} users, {members.Count} eligible)");
+
         if (members.Count == 0)
         {
             _logger.LogWarning("No eligible members found");
+            context.WriteLine("No eligible members.");
             return;
         }
 
@@ -85,12 +99,17 @@ public class HottieOfTheDayJob : IHangfireJob
         if (channel != null)
         {
             var streakText = streak > 1 ? $" (🔥 {streak} day streak!)" : "";
-            await channel.SendMessageAsync(
-                $"<@{winner.Id}> is the **Hottie of the Day**!{streakText} That's {totalWins} time(s) total! :heart_eyes:");
+            var msg = $"<@{winner.Id}> is the **Hottie of the Day**!{streakText} That's {totalWins} time(s) total! :heart_eyes:";
+            await channel.SendMessageAsync(msg);
+            _logger.LogInformation("Announced hottie in channel {ChannelId}", AnnounceChannelId);
+            context.WriteLine($"Announced in #{channel.Name}");
         }
         else
         {
             _logger.LogWarning("Announce channel {ChannelId} not found", AnnounceChannelId);
+            context.SetTextColor(ConsoleTextColor.Red);
+            context.WriteLine($"Channel {AnnounceChannelId} not found!");
+            context.ResetTextColor();
         }
 
         context.WriteLine($"Hottie of the Day: {winner.Username}#{winner.Discriminator} ({totalWins} total wins, {streak} streak)");
