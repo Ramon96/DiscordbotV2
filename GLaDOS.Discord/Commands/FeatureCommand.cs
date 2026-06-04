@@ -50,7 +50,7 @@ public partial class FeatureCommand : IDiscordCommand
         - If the request is clear, return an empty clarifications array
         - Maximum 4 clarification questions
 
-        Output ONLY valid JSON (no markdown, no commentary):
+        Output ONLY valid JSON (no markdown, no commentary, no reasoning or thinking process):
         {"title":"string","summary":"string","clarifications":[{"question":"string","options":["string"]}],"files":[{"path":"string","description":"string"}],"manualSteps":["string"]}
         """;
 
@@ -70,7 +70,7 @@ public partial class FeatureCommand : IDiscordCommand
         - Use GLaDOS.Infra.EntityFramework.ApplicationDbContext for database
         - Use GLaDOS.Core.Domain for domain models
 
-        Output EXACT format for each file:
+        Output EXACT format for each file (no reasoning, no explanation — just the files):
         ### FILE: path/FileName.cs
         ```csharp
         // complete compilable code
