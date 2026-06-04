@@ -39,6 +39,10 @@ services:
       - "8080:8080"
     volumes:
       - /root/DiscordbotV2:/repo:rw
+      - /root/DiscordbotV2/.env:/repo/.env:ro
+      - /root/DiscordbotV2/docker-compose.yml:/repo/docker-compose.yml:ro
+      - /root/DiscordbotV2/Dockerfile:/repo/Dockerfile:ro
+      - /root/DiscordbotV2/.github:/repo/.github:ro
     restart: unless-stopped
     networks:
       - glados_network

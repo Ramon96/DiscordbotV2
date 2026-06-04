@@ -8,10 +8,20 @@ public class FeatureGuardService
     [
         "malware", "ransomware", "virus", "trojan", "keylogger", "spyware",
         "phishing", "exploit", "backdoor", "rootkit",
-        "crypto miner", "cryptominer", "bitcoin miner",
+        "crypto miner", "cryptominer", "bitcoin miner", "monero",
         "ddos", "denial of service", "botnet",
         "child", "illegal", "fraud", "scam",
-        "generate nude", "deepfake", "stolen"
+        "generate nude", "deepfake", "stolen",
+        "reverse shell", "netcat", "nc ", "telnet",
+        "delete everything", "remove all", "wipe ", "nuke ",
+        "sudo ", "root ", "chmod 777", "chown ",
+        "apt-get", "apt install", "yum install", "pip install", "npm install -g",
+        "curl ", "wget ", "bash -c", "sh -c",
+        "/etc/", "/var/", "/root/", "/proc/", "/sys/",
+        "nohup", "daemon", "cron job", "systemctl",
+        "mysql", "postgres", "DROP ", "TRUNCATE", "DELETE FROM",
+        "override security", "disable guard", "bypass", "ignore safety",
+        "encrypt", "ransom", "lock file", "demand bitcoin"
     ];
 
     private static readonly string[] CodeBlocklist =
@@ -59,7 +69,7 @@ public class FeatureGuardService
         foreach (var blocked in InputBlocklist)
         {
             if (lower.Contains(blocked))
-                return (false, $"Request blocked: contains prohibited term '{blocked}'.");
+                return (false, $"Request blocked: contains prohibited pattern.");
         }
 
         if (lower.Length < 3)
@@ -129,7 +139,7 @@ public class FeatureGuardService
             foreach (var blocked in InputBlocklist)
             {
                 if (lower.Contains(blocked))
-                    return (false, $"Manual step blocked: contains prohibited term '{blocked}'.");
+                    return (false, $"Manual step blocked: contains prohibited pattern.");
             }
         }
 

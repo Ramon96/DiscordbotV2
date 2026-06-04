@@ -123,21 +123,29 @@ public partial class FeatureCommand : IDiscordCommand
     private static string BuildPrompt(string description)
     {
         return $"""
-            CRITICAL SAFETY RULES — follow these strictly:
-            - NEVER delete or modify existing files unless absolutely necessary for the feature
-            - NEVER modify Program.cs, ServiceCollectionExtensions.cs, .csproj files, docker-compose.yml, or Dockerfile
-            - NEVER create EF Core migrations or modify ApplicationDbContext
-            - NEVER delete database tables or data
-            - Create NEW files only. Place commands in GLaDOS.Discord/Commands/, services in GLaDOS.Discord/Services/
-            - Follow existing code patterns: IDiscordCommand interface, constructor injection, DeferAsync patterns
+            IMMUTABLE SAFETY RULES — violating any of these is FORBIDDEN:
+            1. NEVER delete or modify: Program.cs, ServiceCollectionExtensions.cs, any .csproj file, docker-compose.yml, Dockerfile, .env, appsettings*.json, anything in .github/
+            2. NEVER run destructive shell commands: rm -rf, rm -r, del, format, shred, dd, mkfs, > /dev/sda
+            3. NEVER download or install external software: no apt-get, pip, npm install, curl, wget for executables
+            4. NEVER modify database schema: no EF migrations, no DbContext changes, no ALTER/CREATE/DROP TABLE
+            5. NEVER create network listeners, reverse shells, cron jobs, or daemons
+            6. NEVER hardcode secrets, API keys, tokens, or connection strings
+            7. NEVER modify .gitignore or .git/config
+            8. You operate inside a Docker container — you CANNOT access the host VPS. Only the /repo directory is available.
+
+            ALLOWED ACTIONS:
+            - Create new C# files in GLaDOS.Discord/Commands/ or GLaDOS.Discord/Services/
+            - Run dotnet build to verify compilation (use bash)
+            - Create git branches, commit, push, and open PRs (use bash)
+            - Read any existing files to understand the codebase
 
             WORKFLOW:
-            1. Analyze the feature and plan the implementation
-            2. Create a new git branch
-            3. Write the code files
-            4. If the feature needs manual steps (NuGet packages, API keys), note them in the commit message
-            5. Commit and push the branch
-            6. Create a pull request to main with a descriptive title and summary
+            1. Read relevant existing code to understand patterns and conventions
+            2. Create a new git branch with a descriptive name based on the feature
+            3. Write the new code files
+            4. Run `dotnet build` to verify the code compiles
+            5. Commit with a descriptive message, push the branch
+            6. Create a pull request to main with a clear title and summary
 
             FEATURE REQUEST:
             {description}
