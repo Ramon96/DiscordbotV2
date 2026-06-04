@@ -70,12 +70,14 @@ public partial class FeatureCommand : IDiscordCommand
             {
                 await CloneRepoAsync(workDir, ct);
 
-                var prUrl = await RunOpencodeAsync(workDir, description, ct);
+                var (prUrl, ocOutput) = await RunOpencodeAsync(workDir, description, ct);
 
                 if (prUrl is not null)
                     await ModifyOriginalResponseAsync(command, $"Pull request created: {prUrl}");
+                else if (!string.IsNullOrWhiteSpace(ocOutput))
+                    await ModifyOriginalResponseAsync(command, $"opencode completed but no PR URL found. Output:\n```\n{Truncate(ocOutput, 1800)}\n```");
                 else
-                    await ModifyOriginalResponseAsync(command, $"Done! Check the repo for a new PR.");
+                    await ModifyOriginalResponseAsync(command, $"opencode completed but produced no output and no PR. The model may have refused the request or encountered an issue.");
             }
             finally
             {
@@ -131,7 +133,7 @@ public partial class FeatureCommand : IDiscordCommand
     [GeneratedRegex(@"Did you mean: (.+?)\?", RegexOptions.IgnoreCase)]
     private static partial Regex ModelSuggestionsPattern();
 
-    private static async Task<string?> RunOpencodeAsync(string workDir, string description, CancellationToken ct)
+    private static async Task<(string? PrUrl, string AllOutput)> RunOpencodeAsync(string workDir, string description, CancellationToken ct)
     {
         var prompt = BuildPrompt(description, workDir);
         var modelsToTry = new List<string>(FallbackModels);
@@ -146,9 +148,13 @@ public partial class FeatureCommand : IDiscordCommand
             var (exitCode, output, error) = await RunOpencodeProcessAsync(workDir, prompt, model, ct);
 
             Console.WriteLine($"[Feature] opencode exit={exitCode} model={model}");
+            Console.WriteLine($"[Feature] stdout={output[..Math.Min(output.Length, 500)]}");
+            Console.WriteLine($"[Feature] stderr={error[..Math.Min(error.Length, 500)]}");
+
+            var allOutput = output + error;
 
             if (exitCode == 0)
-                return ExtractPrUrl(output + error);
+                return (ExtractPrUrl(allOutput), allOutput);
 
             if (modelsToTry.Count > 0 && ContainsModelNotFound(error))
             {
@@ -274,6 +280,11 @@ public partial class FeatureCommand : IDiscordCommand
     {
         var match = PrUrlPattern().Match(text);
         return match.Success ? match.Value : null;
+    }
+
+    private static string Truncate(string value, int maxLength)
+    {
+        return value.Length <= maxLength ? value : value[..(maxLength - 3)] + "...";
     }
 
     private static async Task ModifyOriginalResponseAsync(SocketSlashCommand command, string content)
