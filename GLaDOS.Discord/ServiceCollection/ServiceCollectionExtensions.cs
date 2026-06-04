@@ -14,14 +14,14 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDiscordServices(this IServiceCollection services)
     {
-        var config = new DiscordConfig()
+        var config = new DiscordSocketConfig
         {
-
+            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers
         };
 
         var collection = services
             .AddSingleton(config)
-            .AddSingleton<DiscordSocketClient>()
+            .AddSingleton<DiscordSocketClient>(sp => new DiscordSocketClient(sp.GetRequiredService<DiscordSocketConfig>()))
             .AddSingleton<IDiscordClient, DiscordClient>()
             .AddSingleton<DiscordNotificationService>()
             .AddScoped<IDiscordUserService, DiscordUserService>()
