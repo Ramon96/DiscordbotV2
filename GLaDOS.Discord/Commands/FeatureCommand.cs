@@ -105,6 +105,9 @@ public partial class FeatureCommand : IDiscordCommand
 
     public async Task ExecuteAsync(SocketSlashCommand command, CancellationToken cancellationToken = default)
     {
+        var apiKey = _configuration["OpenCode:ApiKey"];
+        Console.WriteLine($"[Feature] Command invoked. API key present: {!string.IsNullOrWhiteSpace(apiKey)}");
+
         await command.DeferAsync();
 
         var description = command.Data.Options.FirstOrDefault(o => o.Name == "description")?.Value as string;
@@ -366,16 +369,40 @@ public partial class FeatureCommand : IDiscordCommand
             Output ONLY the JSON specification:
             """;
 
+        Console.WriteLine($"[Feature] Sending spec request for: {userRequest[..Math.Min(userRequest.Length, 100)]}");
         var response = await _aiService.SendAsync(SpecSystemPrompt, prompt, SpecModel, maxTokens: 3000, temperature: 0.7, ct: ct);
 
-        if (response is null) return null;
+        if (response is null)
+        {
+            Console.WriteLine("[Feature] AIService.SendAsync returned null — check API key or network.");
+            return null;
+        }
+
+        Console.WriteLine($"[Feature] Raw AI response ({response.Length} chars): {response[..Math.Min(response.Length, 300)]}");
 
         try
         {
             var json = ExtractJson(response);
+            Console.WriteLine($"[Feature] Extracted JSON ({json.Length} chars)");
             var spec = JsonSerializer.Deserialize<FeatureSpec>(json);
-            if (spec is null || string.IsNullOrWhiteSpace(spec.Title) || spec.Files is null || spec.Files.Count == 0)
+
+            if (spec is null)
+            {
+                Console.WriteLine("[Feature] Deserialized spec is null.");
                 return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(spec.Title))
+            {
+                Console.WriteLine($"[Feature] Spec has no title. JSON: {json[..Math.Min(json.Length, 200)]}");
+                return null;
+            }
+
+            if (spec.Files is null || spec.Files.Count == 0)
+            {
+                Console.WriteLine($"[Feature] Spec has no files. JSON: {json[..Math.Min(json.Length, 200)]}");
+                return null;
+            }
 
             spec = spec with
             {
@@ -383,11 +410,12 @@ public partial class FeatureCommand : IDiscordCommand
                 ManualSteps = spec.ManualSteps ?? new List<string>()
             };
 
+            Console.WriteLine($"[Feature] Spec OK: title='{spec.Title}', files={spec.Files.Count}, clarifications={spec.Clarifications.Count}");
             return spec;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to parse spec JSON: {ex.Message}\nResponse: {response}");
+            Console.WriteLine($"[Feature] Failed to parse spec JSON: {ex.GetType().Name}: {ex.Message}\nResponse: {response[..Math.Min(response.Length, 500)]}");
             return null;
         }
     }
