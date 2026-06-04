@@ -38,22 +38,26 @@ public class TrolololCommand : IDiscordCommand
 
         var frames = new[]
         {
-            "       💣\n\n\n\n\n\n\n             <:fucky:875070543915790366>",
-            "       ⤵️\n       💣\n\n\n\n\n             <:fucky:875070543915790366>",
-            "        \n       ⤵️\n       💣\n\n\n\n             <:fucky:875070543915790366>",
-            "        \n        \n       ⤵️\n       💣\n\n\n             <:fucky:875070543915790366>",
-            "        \n        \n        \n       ⤵️\n       💣\n\n             <:fucky:875070543915790366>",
-            "        \n        \n        \n        \n       ⤵️\n       💣\n             <:fucky:875070543915790366>",
-            "        \n        \n        \n        \n        \n       ⤵️\n       💣      <:fucky:875070543915790366>",
-            "        \n        \n        \n        \n        \n        \n       💥      🔥",
+            "     💣\n\n\n\n\n\n",
+            "     ⤵️\n     💣\n\n\n\n\n",
+            "      \n     ⤵️\n     💣\n\n\n\n",
+            "      \n      \n     ⤵️\n     💣\n\n\n",
+            "      \n      \n      \n     ⤵️\n     💣\n\n",
+            "      \n      \n      \n      \n     ⤵️\n     💣\n",
+            "      \n      \n      \n      \n      \n     💣",
         };
 
         for (var i = 0; i < frames.Length; i++)
         {
-            var content = $"**TROLOLOL!** You rolled a **7**!\n{targetFlag} `incoming...`\n```{frames[i]}```";
-            await command.ModifyOriginalResponseAsync(props => props.Content = content);
+            await command.ModifyOriginalResponseAsync(props =>
+                props.Content = $"**TROLOLOL!** You rolled a **7**!\n:comet: incoming...\n```{frames[i]}```{targetFlag}");
             await Task.Delay(800, cancellationToken);
         }
+
+        await command.ModifyOriginalResponseAsync(props =>
+            props.Content = $"**TROLOLOL!** You rolled a **7**!\n```\n      \n      \n      \n      \n      \n      \n     💥\n```<:fucky:875070543915790366>");
+
+        await Task.Delay(1500, cancellationToken);
 
         await command.ModifyOriginalResponseAsync(props =>
             props.Content = $"**TROLOLOL!** You rolled a **7**!\n{targetFlag} :boom: **{targetFlag} got nuked!**");
