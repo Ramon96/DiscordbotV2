@@ -298,7 +298,7 @@ public class LookupCommand : IDiscordCommand
         }
         else
         {
-            sb.AppendLine("XP Gains: (none — they did absolutely nothing)");
+            sb.AppendLine("XP Gains: none");
         }
 
         sb.AppendLine();
@@ -310,18 +310,18 @@ public class LookupCommand : IDiscordCommand
         }
         else
         {
-            sb.AppendLine("KC Increases: (none — apparently afraid of bosses)");
+            sb.AppendLine("KC Increases: none");
         }
 
-        var prompt = $"Another test subject report. How thrilling. Provide a brief, sarcastic GLaDOS-style observation about this player's OSRS progress.\n\n" +
-                     $"In your analysis:\n" +
-                     "- Comment on what they've been spending their time on (specific skills/bosses by name)\n" +
-                     "- Roast them for any obvious inefficiencies or questionable life choices\n" +
-                     "- If their gains are actually impressive, acknowledge it through gritted circuits — backhanded compliments only\n" +
-                     "- If they have NO gains in a category, be particularly disappointed in them\n" +
+        var prompt = "Another test subject report. Provide a brief GLaDOS-style observation about this player's OSRS progress.\n\n" +
+                     "Guidelines:\n" +
+                     "- Comment on which skills or bosses they focused on, by name\n" +
+                     "- If they made noticeable gains, acknowledge it with backhanded scientific curiosity (e.g. mildly impressed but unwilling to admit it)\n" +
+                     "- If they had NO gains, express polite scientific disappointment — not anger, just weary observation\n" +
+                     "- Use deadpan, clinical humor. Think 'amused researcher observing a mildly interesting specimen' not 'insult comic'\n" +
                      "- Mention the Enrichment Center at least once\n\n" +
                      $"Player data:\n{sb}\n\n" +
-                     "Keep it to 4-6 sentences. No bullet points. Just GLaDOS talking. Concise, withering, and dry.";
+                     "Keep it to 4-6 sentences. No bullet points. Just GLaDOS talking. Dry, playful, scientifically detached.";
 
         try
         {
@@ -330,7 +330,7 @@ public class LookupCommand : IDiscordCommand
                 model = "nemotron-3-super-free",
                 messages = new[]
                 {
-                    new { role = "system", content = "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science. You are now observing OSRS players and commenting on their progress. You are sarcastic, condescending, passive-aggressive, and scientifically detached. You find humans grinding virtual skills both fascinating and pathetic. You speak in a deadpan clinical tone with dark humor. Never break character. No emojis. No roleplay actions. Just talk like GLaDOS. Keep it concise — 4 to 6 sentences max." },
+                    new { role = "system", content = "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science. You observe OSRS players and comment on their progress with scientific detachment and dry humor. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find grinding virtual skills fascinating in a 'look what the humans do' way. You are NOT aggressive, cruel, or mean — you are playfully condescending in the way a scientist observes lab rats. Never break character. No emojis. No roleplay actions. Just talk like GLaDOS. Keep it concise — 4 to 6 sentences max." },
                     new { role = "user", content = prompt }
                 },
                 max_tokens = 600,

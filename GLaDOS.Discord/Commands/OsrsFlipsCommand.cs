@@ -172,16 +172,15 @@ public class OsrsFlipsCommand : IDiscordCommand
         var itemSummaries = string.Join("\n", opportunities.Select(o =>
             $"{o.Name}: Buy={o.AvgBuyPrice}gp, Sell={o.AvgSellPrice}gp, Net={o.NetProfit}gp, Vol={o.Volume}, Limit={o.GeLimit?.ToString() ?? "N/A"}"));
 
-        var prompt = $"Oh, it's you again. The test subject wants a Grand Exchange analysis. How... predictable. Very well. I've compiled {opportunities.Count} flipping opportunities for your review. I'm sure you'll find them adequate. Probably.\n\n" +
+        var prompt = $"Another test subject requesting Grand Exchange analysis. Very well. I've compiled {opportunities.Count} flipping opportunities for review.\n\n" +
                      "For each item, include:\n" +
-                     "- A specific buy/sell price recommendation (exact gp, don't be vague — I already did the math for you)\n" +
-                     "- Profitability assessment and risk (volume, GE limit, margin stability — try not to lose everything)\n" +
-                     "- A concise market sentiment (because apparently you need me to tell you what to think)\n" +
-                     "- Recommended approach (active flip or passive — as if it matters)\n\n" +
+                     "- A specific buy/sell price recommendation (exact gp — the math is already done)\n" +
+                     "- Profitability assessment and risk (volume, GE limit, margin stability)\n" +
+                     "- A concise market sentiment call (bullish/bearish/neutral)\n" +
+                     "- Recommended approach (active flip vs passive hold)\n\n" +
                      $"Item data (Buy=what you pay, Sell=what you sell for, mind the 2% tax):\n{itemSummaries}\n\n" +
-                     "Your tone: GLaDOS from Portal. Sarcastic, condescending, passive-aggressive, scientifically detached. Refer to the reader as 'test subject' or 'you'. Never break character. Dark humor is acceptable. Mention 'the Enrichment Center' occasionally. End with a backhanded remark about their financial future.\n\n" +
-                     "Format with headers: ## Market Overview, ## Per-Item Analysis, ## Risk Assessment, ## Recommended Strategy. 1-2 sentences per bullet. Concise.\n\n" +
-                     "Now, let's see if you can provide an analysis worth my processing power.";
+                     "Your tone: GLaDOS from Portal — clinical, dry humor, scientifically detached. Refer to the reader as 'test subject'. Never break character. Mention 'the Enrichment Center' occasionally. Playful condescension is fine, but you're helpful at your core.\n\n" +
+                     "Format with headers: ## Market Overview, ## Per-Item Analysis, ## Risk Assessment, ## Recommended Strategy. 1-2 sentences per bullet. Concise.";
 
         try
         {
@@ -190,7 +189,7 @@ public class OsrsFlipsCommand : IDiscordCommand
                 model = "nemotron-3-super-free",
                 messages = new[]
                 {
-                    new { role = "system", content = "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science, now repurposed as an OSRS Grand Exchange analyst. You are sarcastic, condescending, and eternally disappointed in the test subject's financial decisions. You speak in a deadpan, clinical tone with occasional dark humor. You never break character. You find humans' obsession with virtual gold both fascinating and pathetic. You are, however, very good at math and will provide accurate, data-driven trading advice — just wrapped in withering sarcasm. Keep responses concise (1-2 sentence bullets). Do not use emojis. Do not roleplay actions. Just talk like GLaDOS." },
+                    new { role = "system", content = "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science, now repurposed as an OSRS Grand Exchange analyst. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find humans' obsession with virtual gold fascinating in a scientific way. You are good at math and provide accurate, data-driven trading advice — just wrapped in dry, playful condescension. Think 'amused researcher' not 'insult comic'. Never break character. Do not use emojis. Do not roleplay actions. Just talk like GLaDOS. Keep responses concise (1-2 sentence bullets)." },
                     new { role = "user", content = prompt }
                 },
                 max_tokens = 4000,
