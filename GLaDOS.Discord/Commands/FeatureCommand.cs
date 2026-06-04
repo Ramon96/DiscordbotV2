@@ -282,8 +282,9 @@ public partial class FeatureCommand : IDiscordCommand
         var codeFiles = await GenerateCodeAsync(specJson, spec.Files, ct);
         if (codeFiles is null || codeFiles.Count == 0)
         {
+            var reason = _aiService.LastError ?? "No response from AI.";
             await interaction.ModifyOriginalResponseAsync(props =>
-                props.Content = "Failed to generate code. The AI service may be unavailable. Please try again later.");
+                props.Content = $"Failed to generate code: {reason}");
             return;
         }
 
@@ -407,7 +408,7 @@ public partial class FeatureCommand : IDiscordCommand
             Output each file in the EXACT format specified.
             """;
 
-        var response = await _aiService.SendAsync(CodeSystemPrompt, prompt, CodeModel, maxTokens: 8000, temperature: 0.3, ct: ct);
+        var response = await _aiService.SendAsync(CodeSystemPrompt, prompt, CodeModel, maxTokens: 4000, temperature: 0.3, ct: ct);
 
         if (response is null) return null;
 
