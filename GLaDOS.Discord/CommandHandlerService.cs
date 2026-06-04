@@ -62,13 +62,23 @@ public class CommandHandlerService : IHostedService
         }
 
         var guild = _client.GetGuild(guildId);
-        foreach (var command in _commands)
+        if (guild == null)
         {
-            Console.WriteLine($"Registering command: {command.Name}");
-            if (guild != null)
-            {
-                await guild.CreateApplicationCommandAsync(command.GetCommandDefinition());
-            }
+            Console.WriteLine("Guild not found, skipping command registration.");
+            return;
+        }
+
+        var commandDefs = _commands.Select(c => c.GetCommandDefinition()).ToArray();
+        Console.WriteLine($"Bulk-registering {commandDefs.Length} commands: {string.Join(", ", _commands.Select(c => c.Name))}");
+
+        try
+        {
+            await guild.BulkOverwriteApplicationCommandAsync(commandDefs);
+            Console.WriteLine("All commands registered successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to register commands: {ex.Message}");
         }
     }
 
