@@ -173,7 +173,7 @@ public class LookupCommand : IDiscordCommand
 
         await command.ModifyOriginalResponseAsync(props => props.Embed = embed);
 
-        var aiRoast = await GetAiRoastAsync(user.Username, (int)periodWeeks, xpGains, kcIncreases, cancellationToken);
+        var aiRoast = await GetAiRoastAsync(user.Username, (int)periodWeeks, xpGains, kcIncreases, currentStats, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(aiRoast))
         {
@@ -279,16 +279,30 @@ public class LookupCommand : IDiscordCommand
         return defaultValue;
     }
 
-    private async Task<string?> GetAiRoastAsync(string username, int periodWeeks, List<XpGain> xpGains, List<KcIncrease> kcIncreases, CancellationToken ct)
+    private async Task<string?> GetAiRoastAsync(string username, int periodWeeks, List<XpGain> xpGains, List<KcIncrease> kcIncreases, List<OldschoolRunescapeStat> currentStats, CancellationToken ct)
     {
         var apiKey = _configuration["OpenCode:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
             return null;
 
+        var maxedSkills = currentStats.Where(s => s.Level >= 99 && s.Name != "Overall").ToList();
+        var isMaxed = maxedSkills.Count >= 23;
+
         var sb = new StringBuilder();
         sb.AppendLine($"Player: {username}");
         sb.AppendLine($"Period: {periodWeeks} week(s)");
         sb.AppendLine();
+
+        if (isMaxed)
+        {
+            sb.AppendLine("Status: Player is MAXED (all skills level 99). Any zero XP gains are because they've already reached the level cap — not due to laziness.");
+            sb.AppendLine();
+        }
+        else if (maxedSkills.Count > 0)
+        {
+            sb.AppendLine($"Skills at 99: {string.Join(", ", maxedSkills.Select(s => s.Name))}");
+            sb.AppendLine();
+        }
 
         if (xpGains.Any())
         {
@@ -316,9 +330,10 @@ public class LookupCommand : IDiscordCommand
         var prompt = "Another test subject report. Provide a brief GLaDOS-style observation about this player's OSRS progress.\n\n" +
                      "Guidelines:\n" +
                      "- Comment on which skills or bosses they focused on, by name\n" +
-                     "- If they made noticeable gains, acknowledge it with backhanded scientific curiosity (e.g. mildly impressed but unwilling to admit it)\n" +
-                     "- If they had NO gains, express polite scientific disappointment — not anger, just weary observation\n" +
-                     "- Use deadpan, clinical humor. Think 'amused researcher observing a mildly interesting specimen' not 'insult comic'\n" +
+                     "- If they made noticeable gains, acknowledge it with backhanded scientific curiosity\n" +
+                     "- If they had NO XP gains but are maxed (level 99 in everything), do NOT mock them for it — instead comment on what they ARE doing (bossing, pet hunting, etc)\n" +
+                     "- If they had NO gains and are NOT maxed, express polite scientific disappointment\n" +
+                     "- Use deadpan, clinical humor. Think 'amused researcher' not 'insult comic'\n" +
                      "- Mention the Enrichment Center at least once\n\n" +
                      $"Player data:\n{sb}\n\n" +
                      "Keep it to 4-6 sentences. No bullet points. Just GLaDOS talking. Dry, playful, scientifically detached.";
