@@ -35,6 +35,13 @@ public partial class FeatureCommand : IDiscordCommand
     {
         await command.DeferAsync();
 
+        if (!Directory.Exists("/repo"))
+        {
+            await command.ModifyOriginalResponseAsync(props =>
+                props.Content = "The repository is not mounted in this container. Contact the bot admin to verify the `/repo` volume mount.");
+            return;
+        }
+
         var description = command.Data.Options.FirstOrDefault(o => o.Name == "description")?.Value as string;
         if (string.IsNullOrWhiteSpace(description))
         {

@@ -33,6 +33,7 @@ COPY --from=publish-scheduler /app/publish/scheduler .
 RUN apt-get update && \
     apt-get install -y curl git && \
     curl -fsSL https://opencode.ai/install | bash && \
+    ln -s /root/.opencode/bin/opencode /usr/local/bin/opencode && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
