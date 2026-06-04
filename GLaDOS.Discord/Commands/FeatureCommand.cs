@@ -67,7 +67,7 @@ public partial class FeatureCommand : IDiscordCommand
 
             await ModifyOriginalResponseAsync(command,
                 $"Working on your feature... (this may take up to 14 minutes)\n" +
-                $"Monitor: `tail -f {workDir}/opencode.log` on the VPS\n\n> {description}");
+                $"Monitor: `docker exec glados_scheduler tail -f {workDir}/opencode.log` on the VPS\n\n> {description}");
 
             try
             {
