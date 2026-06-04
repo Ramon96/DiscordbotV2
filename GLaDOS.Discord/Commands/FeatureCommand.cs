@@ -376,8 +376,9 @@ public partial class FeatureCommand : IDiscordCommand
 
         if (response is null)
         {
-            Console.WriteLine("[Feature] AIService.SendAsync returned null.");
-            return (null, "The AI service did not respond. Possible causes:\n- OpenCode API is down\n- Network error reaching opencode.ai\n- Invalid or expired API key\n- Request timed out (120s)\n\nCheck the bot's docker logs for details.");
+            var reason = _aiService.LastError ?? "No response from AI.";
+            Console.WriteLine($"[Feature] AIService failed: {reason}");
+            return (null, $"AI service failed: {reason}");
         }
 
         Console.WriteLine($"[Feature] Raw AI response ({response.Length} chars): {response[..Math.Min(response.Length, 300)]}");

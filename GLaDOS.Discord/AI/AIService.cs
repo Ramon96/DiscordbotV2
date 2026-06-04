@@ -14,6 +14,8 @@ public class AIService
         Timeout = TimeSpan.FromSeconds(120)
     };
 
+    public string? LastError { get; private set; }
+
     public AIService(IConfiguration configuration)
     {
         _configuration = configuration;
@@ -30,7 +32,8 @@ public class AIService
         var apiKey = _configuration["OpenCode:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            Console.WriteLine("AI request skipped: OpenCode:ApiKey not configured.");
+            LastError = "API key not configured (OpenCode:ApiKey missing in config).";
+            Console.WriteLine($"AI request skipped: {LastError}");
             return null;
         }
 
@@ -60,7 +63,9 @@ public class AIService
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync(ct);
-                Console.WriteLine($"AI request returned {(int)response.StatusCode}: {errorBody[..Math.Min(errorBody.Length, 200)]}");
+                var truncated = errorBody[..Math.Min(errorBody.Length, 300)];
+                LastError = $"API returned {(int)response.StatusCode}: {truncated}";
+                Console.WriteLine(LastError);
                 return null;
             }
 
@@ -72,21 +77,25 @@ public class AIService
                 .GetProperty("content")
                 .GetString();
 
+            LastError = null;
             return content;
         }
         catch (HttpRequestException ex)
         {
-            Console.WriteLine($"AI request network error: {ex.Message}");
+            LastError = $"Network error: {ex.Message}";
+            Console.WriteLine(LastError);
             return null;
         }
         catch (TaskCanceledException)
         {
-            Console.WriteLine("AI request timed out.");
+            LastError = "Request timed out after 120 seconds.";
+            Console.WriteLine(LastError);
             return null;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"AI request failed: {ex.GetType().Name}: {ex.Message}");
+            LastError = $"{ex.GetType().Name}: {ex.Message}";
+            Console.WriteLine(LastError);
             return null;
         }
     }
