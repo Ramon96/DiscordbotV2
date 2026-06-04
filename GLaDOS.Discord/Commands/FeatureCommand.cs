@@ -146,11 +146,11 @@ public partial class FeatureCommand : IDiscordCommand
             - Create git branches, commit, push, and open PRs (use bash)
             - Read any existing files to understand the codebase
 
-            WORKFLOW:
+            WORKFLOW (follow in order — do NOT skip steps):
             1. Read relevant existing code to understand patterns and conventions
             2. Create a new git branch with a descriptive name based on the feature
             3. Write the new code files
-            4. Run `dotnet build` to verify the code compiles
+            4. Run `dotnet build GLaDOS.sln` in /repo — if it FAILS, FIX the errors and try again. DO NOT proceed to step 5 until the build passes with zero errors.
             5. Commit with a descriptive message, push the branch
             6. Create a pull request to main with a clear title and summary
 
