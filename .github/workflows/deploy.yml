@@ -57,5 +57,14 @@ jobs:
               fi
             done
 
+            docker-compose down
             docker-compose up --build -d
+
+            sleep 10
+            if ! docker container ls --format '{{.Names}}' | grep -q glados_scheduler; then
+              echo "ERROR: glados_scheduler failed to start. Check logs:"
+              docker-compose logs --tail 50
+              exit 1
+            fi
+            echo "Deploy successful."
             docker image prune -f
