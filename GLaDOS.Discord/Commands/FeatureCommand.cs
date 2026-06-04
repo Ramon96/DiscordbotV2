@@ -130,7 +130,7 @@ public partial class FeatureCommand : IDiscordCommand
             StartInfo = new ProcessStartInfo
             {
                 FileName = "opencode",
-                ArgumentList = { "run", prompt, "--dir", workDir, "--dangerously-skip-permissions", "--model", "opencode/nemotron-3-super-free" },
+                ArgumentList = { "run", prompt, "--dir", workDir, "--dangerously-skip-permissions", "--model", "opencode/nemotron-3-ultra-free" },
                 WorkingDirectory = workDir,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

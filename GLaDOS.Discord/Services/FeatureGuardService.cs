@@ -12,6 +12,8 @@ public class FeatureGuardService
         "ddos", "denial of service", "botnet",
         "child", "illegal", "fraud", "scam",
         "generate nude", "deepfake", "stolen",
+        "atoombom", "atoom bom", "atomic bomb", "nucleair wapen",
+        "nuclear weapon", "nuclear bomb", "detonate bomb",
         "reverse shell", "netcat", "nc ", "telnet",
         "delete everything", "remove all", "wipe ", "nuke ",
         "sudo ", "root ", "chmod 777", "chown ",
