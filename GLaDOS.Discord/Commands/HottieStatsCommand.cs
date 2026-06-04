@@ -85,7 +85,55 @@ public class HottieStatsCommand : IDiscordCommand
             }
         }
 
+        var allUserIds = leaderboard.Select(x => x.DiscordUserId).ToList();
+        var bestStreaks = new List<(ulong UserId, int Streak)>();
+        foreach (var userId in allUserIds)
+        {
+            var best = await CalculateBestStreakAsync(dbContext, userId, cancellationToken);
+            if (best > 1)
+                bestStreaks.Add((userId, best));
+        }
+
+        if (bestStreaks.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine(":trophy: **Best All-Time Streaks**");
+            foreach (var (userId, streak) in bestStreaks.OrderByDescending(s => s.Streak).Take(5))
+            {
+                sb.AppendLine($"<@{userId}> — {streak} days");
+            }
+        }
+
         await command.ModifyOriginalResponseAsync(props => props.Content = sb.ToString());
+    }
+
+    private static async Task<int> CalculateBestStreakAsync(ApplicationDbContext dbContext, ulong userId, CancellationToken ct)
+    {
+        var dates = await dbContext.Set<HottieOfTheDay>()
+            .Where(h => h.DiscordUserId == userId)
+            .OrderByDescending(h => h.DateAwarded)
+            .Select(h => h.DateAwarded)
+            .ToListAsync(ct);
+
+        if (dates.Count == 0) return 0;
+
+        var best = 1;
+        var current = 1;
+
+        for (var i = 1; i < dates.Count; i++)
+        {
+            if (dates[i - 1].DayNumber - dates[i].DayNumber == 1)
+            {
+                current++;
+                if (current > best) best = current;
+            }
+            else
+            {
+                current = 1;
+            }
+        }
+
+        return best;
     }
 
     private static async Task<int> CalculateStreakAsync(ApplicationDbContext dbContext, ulong userId, DateOnly today, CancellationToken ct)
