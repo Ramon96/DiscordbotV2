@@ -63,9 +63,12 @@ public partial class FeatureCommand : IDiscordCommand
 
         try
         {
-            await ModifyOriginalResponseAsync(command, $"Working on your feature... (this may take up to 14 minutes)\n\n> {description}");
-
             var workDir = $"/tmp/feature-{Guid.NewGuid():N}";
+
+            await ModifyOriginalResponseAsync(command,
+                $"Working on your feature... (this may take up to 14 minutes)\n" +
+                $"Monitor: `tail -f {workDir}/opencode.log` on the VPS\n\n> {description}");
+
             try
             {
                 await CloneRepoAsync(workDir, ct);
@@ -177,6 +180,9 @@ public partial class FeatureCommand : IDiscordCommand
     private static async Task<(int ExitCode, string Output, string Error)> RunOpencodeProcessAsync(
         string workDir, string prompt, string model, CancellationToken ct)
     {
+        var logPath = Path.Combine(workDir, "opencode.log");
+        var logLock = new object();
+
         using var process = new Process
         {
             StartInfo = new ProcessStartInfo
@@ -193,8 +199,8 @@ public partial class FeatureCommand : IDiscordCommand
 
         process.Start();
 
-        var outputTask = process.StandardOutput.ReadToEndAsync(ct);
-        var errorTask = process.StandardError.ReadToEndAsync(ct);
+        var readStdout = ReadAndLogStreamAsync(process.StandardOutput, logPath, logLock, ct);
+        var readStderr = ReadAndLogStreamAsync(process.StandardError, logPath, logLock, ct);
 
         var completed = process.WaitForExit((int)OpencodeTimeout.TotalMilliseconds);
         if (!completed)
@@ -203,7 +209,32 @@ public partial class FeatureCommand : IDiscordCommand
             throw new TimeoutException("Timed out after 14 minutes. Try breaking the feature into smaller pieces.");
         }
 
-        return (process.ExitCode, await outputTask, await errorTask);
+        var output = await readStdout;
+        var error = await readStderr;
+
+        return (process.ExitCode, output, error);
+    }
+
+    private static async Task<string> ReadAndLogStreamAsync(StreamReader reader, string logPath, object logLock, CancellationToken ct)
+    {
+        var sb = new System.Text.StringBuilder();
+        var buffer = new char[4096];
+
+        while (true)
+        {
+            var count = await reader.ReadAsync(buffer, 0, buffer.Length);
+            if (count == 0) break;
+
+            var chunk = new string(buffer, 0, count);
+            sb.Append(chunk);
+
+            lock (logLock)
+            {
+                File.AppendAllText(logPath, chunk);
+            }
+        }
+
+        return sb.ToString();
     }
 
     private static bool ContainsModelNotFound(string error)
@@ -264,9 +295,10 @@ public partial class FeatureCommand : IDiscordCommand
             1. Read relevant existing code to understand patterns and conventions
             2. Create a new git branch with a descriptive name based on the feature
             3. Write the new code files
-            4. Run `dotnet build GLaDOS.sln` in the repo — if it FAILS, FIX the errors and try again. DO NOT proceed to step 5 until the build passes with zero errors.
-            5. Commit with a descriptive message, push the branch
-            6. Create a pull request to main with a clear title and summary
+            4. Run `dotnet build GLaDOS.sln` — if it FAILS, FIX the errors and try again. DO NOT proceed until the build passes with zero errors.
+            5. Use bash: `git add -A && git commit -m "description" && git push -u origin HEAD`
+            6. Use bash to create the PR: `gh pr create --base main --title "Feature: description" --body "Summary of changes"`
+            7. The `gh pr create` command will output the PR URL on stdout — that URL is what the user needs.
 
             FEATURE REQUEST:
             {description}
