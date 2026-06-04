@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Discord;
@@ -14,6 +15,9 @@ public partial class FeatureCommand : IDiscordCommand
     private readonly GitHubService _gitHubService;
     private readonly FeatureGuardService _guardService;
     private readonly IConfiguration _configuration;
+
+    private static readonly ConcurrentDictionary<ulong, PendingFeatureRequest> PendingRequests = new();
+    private static readonly TimeSpan PendingTimeout = TimeSpan.FromMinutes(30);
 
     private const string SpecModel = "nemotron-3-super-free";
     private const string CodeModel = "nemotron-3-super-free";
@@ -39,8 +43,15 @@ public partial class FeatureCommand : IDiscordCommand
         - NEVER modify existing files — create NEW files only
         - File paths relative to repo root (e.g., GLaDOS.Discord/Commands/MyCommand.cs)
 
+        IMPORTANT — Clarifications:
+        - If the user's request is vague or has multiple valid interpretations, ask clarifying questions
+        - Each clarification should have a clear question and 2-5 concrete options
+        - Only ask questions that materially affect the implementation
+        - If the request is clear, return an empty clarifications array
+        - Maximum 4 clarification questions
+
         Output ONLY valid JSON (no markdown, no commentary):
-        {"title":"string","summary":"string","files":[{"path":"string","description":"string"}],"manualSteps":["string"]}
+        {"title":"string","summary":"string","clarifications":[{"question":"string","options":["string"]}],"files":[{"path":"string","description":"string"}],"manualSteps":["string"]}
         """;
 
     private const string CodeSystemPrompt =
@@ -148,14 +159,163 @@ public partial class FeatureCommand : IDiscordCommand
             return;
         }
 
+        if (spec.Clarifications is { Count: > 0 })
+        {
+            await ShowClarificationsAsync(command, spec, description, cancellationToken);
+            return;
+        }
+
+        await BuildAndCreatePrAsync(command, spec, description, cancellationToken);
+    }
+
+    private async Task ShowClarificationsAsync(SocketSlashCommand command, FeatureSpec spec, string description, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N")[..8];
+
+        PendingRequests[command.User.Id] = new PendingFeatureRequest(
+            requestId, spec, description, command.Channel.Id, DateTime.UtcNow);
+
+        var questionsText = new System.Text.StringBuilder();
+        questionsText.AppendLine($"**{spec.Title}**\n");
+        questionsText.AppendLine(spec.Summary);
+        questionsText.AppendLine("\nI need clarification on a few things:\n");
+
+        for (var i = 0; i < spec.Clarifications.Count; i++)
+        {
+            var q = spec.Clarifications[i];
+            questionsText.AppendLine($"{i + 1}. **{q.Question}**");
+            if (q.Options is { Count: > 0 })
+            {
+                questionsText.Append("   Options: ");
+                questionsText.AppendLine(string.Join(" / ", q.Options));
+            }
+            questionsText.AppendLine();
+        }
+
+        var button = new ButtonBuilder()
+            .WithLabel("Refine Feature")
+            .WithCustomId($"feature-refine-{requestId}")
+            .WithStyle(ButtonStyle.Primary);
+
+        var component = new ComponentBuilder()
+            .WithButton(button)
+            .Build();
+
         await command.ModifyOriginalResponseAsync(props =>
+        {
+            props.Content = questionsText.ToString();
+            props.Components = component;
+        });
+    }
+
+    public async Task HandleClarifyButtonAsync(SocketMessageComponent component)
+    {
+        var customId = component.Data.CustomId;
+        var requestId = customId["feature-refine-".Length..];
+
+        if (!PendingRequests.TryGetValue(component.User.Id, out var pending) || pending.RequestId != requestId)
+        {
+            await component.RespondAsync("This clarification request has expired or is not yours. Run `/feature` again.", ephemeral: true);
+            return;
+        }
+
+        if (DateTime.UtcNow - pending.CreatedAt > PendingTimeout)
+        {
+            PendingRequests.TryRemove(component.User.Id, out _);
+            await component.RespondAsync("This clarification request has timed out. Run `/feature` again.", ephemeral: true);
+            return;
+        }
+
+        var modal = new ModalBuilder()
+            .WithTitle("Feature Clarification")
+            .WithCustomId($"feature-clarify-{requestId}");
+
+        var questionCount = Math.Min(pending.Spec.Clarifications.Count, 5);
+        for (var i = 0; i < questionCount; i++)
+        {
+            var q = pending.Spec.Clarifications[i];
+            var placeholder = q.Options is { Count: > 0 }
+                ? string.Join(" / ", q.Options)
+                : "Type your answer...";
+
+            modal.AddTextInput(
+                label: q.Question.Length > 45 ? q.Question[..42] + "..." : q.Question,
+                customId: $"clarify-{i}",
+                placeholder: placeholder.Length > 100 ? placeholder[..97] + "..." : placeholder,
+                required: false,
+                style: TextInputStyle.Paragraph);
+        }
+
+        await component.RespondWithModalAsync(modal.Build());
+    }
+
+    public async Task HandleClarifyModalAsync(SocketModal modal)
+    {
+        var customId = modal.Data.CustomId;
+        var requestId = customId["feature-clarify-".Length..];
+
+        if (!PendingRequests.TryGetValue(modal.User.Id, out var pending) || pending.RequestId != requestId)
+        {
+            await modal.RespondAsync("This clarification request has expired. Run `/feature` again.", ephemeral: true);
+            return;
+        }
+
+        PendingRequests.TryRemove(modal.User.Id, out _);
+
+        var answers = new Dictionary<string, string>();
+        foreach (var input in modal.Data.Components)
+        {
+            if (!string.IsNullOrWhiteSpace(input.Value))
+                answers[input.CustomId] = input.Value;
+        }
+
+        await modal.DeferAsync();
+
+        var enrichedDescription = pending.Description;
+        if (answers.Count > 0)
+        {
+            enrichedDescription += "\n\nClarifications from user:\n";
+            for (var i = 0; i < pending.Spec.Clarifications.Count; i++)
+            {
+                var q = pending.Spec.Clarifications[i];
+                if (answers.TryGetValue($"clarify-{i}", out var answer))
+                    enrichedDescription += $"- {q.Question}: {answer}\n";
+            }
+        }
+
+        await modal.ModifyOriginalResponseAsync(props =>
+            props.Content = $"Refining spec with your clarifications...\n\n> {pending.Spec.Title}");
+
+        var spec = await GenerateSpecAsync(enrichedDescription, CancellationToken.None);
+        if (spec is null)
+        {
+            await modal.ModifyOriginalResponseAsync(props =>
+                props.Content = "Failed to refine the specification. The AI service may be unavailable. Please try again later.");
+            return;
+        }
+
+        var specFiles = spec.Files.Select(f => f.Path).ToList();
+        var (specOk, specReason) = _guardService.ValidateSpecFilePaths(specFiles);
+        if (!specOk)
+        {
+            await modal.ModifyOriginalResponseAsync(props =>
+                props.Content = $"Spec blocked: {specReason}");
+            return;
+        }
+
+        await BuildAndCreatePrAsync(modal, spec, enrichedDescription, CancellationToken.None);
+    }
+
+    private async Task BuildAndCreatePrAsync(IDiscordInteraction interaction, FeatureSpec spec, string description, CancellationToken ct)
+    {
+        await interaction.ModifyOriginalResponseAsync(props =>
             props.Content = $"Spec designed. **{spec.Title}**\n\nGenerating code for {spec.Files.Count} file(s)...");
 
         var specJson = JsonSerializer.Serialize(spec);
-        var codeFiles = await GenerateCodeAsync(specJson, spec.Files, cancellationToken);
+        var codeFiles = await GenerateCodeAsync(specJson, spec.Files, ct);
         if (codeFiles is null || codeFiles.Count == 0)
         {
-            await command.ModifyOriginalResponseAsync(props =>
+            await interaction.ModifyOriginalResponseAsync(props =>
                 props.Content = "Failed to generate code. The AI service may be unavailable. Please try again later.");
             return;
         }
@@ -165,7 +325,7 @@ public partial class FeatureCommand : IDiscordCommand
             var (codeOk, codeReason) = _guardService.ValidateCode(file.Path, file.Content);
             if (!codeOk)
             {
-                await command.ModifyOriginalResponseAsync(props =>
+                await interaction.ModifyOriginalResponseAsync(props =>
                     props.Content = $"Code validation blocked in `{file.Path}`: {codeReason}");
                 return;
             }
@@ -177,23 +337,23 @@ public partial class FeatureCommand : IDiscordCommand
             var prBody = BuildPrBody(spec, codeFiles);
 
             var prUrl = await _gitHubService.CreateFeaturePullRequestAsync(
-                branchName, spec.Title, prBody, codeFiles, cancellationToken);
+                branchName, spec.Title, prBody, codeFiles, ct);
 
             if (spec.ManualSteps.Count > 0)
             {
                 var manualComment = "## Manual Steps Required\n\n" +
                     string.Join("\n", spec.ManualSteps.Select(s => $"- {s}")) +
                     "\n\n*These steps must be completed by a human maintainer before this PR can be merged.*";
-                await _gitHubService.AddCommentAsync(prUrl, manualComment, cancellationToken);
+                await _gitHubService.AddCommentAsync(prUrl, manualComment, ct);
             }
 
-            await command.ModifyOriginalResponseAsync(props =>
+            await interaction.ModifyOriginalResponseAsync(props =>
                 props.Content = $"Pull request created: {prUrl}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"PR creation failed: {ex.Message}");
-            await command.ModifyOriginalResponseAsync(props =>
+            await interaction.ModifyOriginalResponseAsync(props =>
                 props.Content = $"Failed to create the pull request: {ex.Message}");
         }
     }
@@ -206,7 +366,7 @@ public partial class FeatureCommand : IDiscordCommand
             Output ONLY the JSON specification:
             """;
 
-        var response = await _aiService.SendAsync(SpecSystemPrompt, prompt, SpecModel, maxTokens: 2000, temperature: 0.7, ct: ct);
+        var response = await _aiService.SendAsync(SpecSystemPrompt, prompt, SpecModel, maxTokens: 3000, temperature: 0.7, ct: ct);
 
         if (response is null) return null;
 
@@ -216,6 +376,13 @@ public partial class FeatureCommand : IDiscordCommand
             var spec = JsonSerializer.Deserialize<FeatureSpec>(json);
             if (spec is null || string.IsNullOrWhiteSpace(spec.Title) || spec.Files is null || spec.Files.Count == 0)
                 return null;
+
+            spec = spec with
+            {
+                Clarifications = spec.Clarifications ?? new List<Clarification>(),
+                ManualSteps = spec.ManualSteps ?? new List<string>()
+            };
+
             return spec;
         }
         catch (Exception ex)
@@ -307,11 +474,21 @@ public partial class FeatureCommand : IDiscordCommand
     }
 }
 
+internal record PendingFeatureRequest(
+    string RequestId,
+    FeatureSpec Spec,
+    string Description,
+    ulong ChannelId,
+    DateTime CreatedAt);
+
 public record FeatureSpec(
     string Title,
     string Summary,
+    List<Clarification> Clarifications,
     List<SpecFile> Files,
     List<string> ManualSteps
 );
+
+public record Clarification(string Question, List<string> Options);
 
 public record SpecFile(string Path, string Description);
