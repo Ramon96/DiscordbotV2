@@ -149,6 +149,18 @@ public partial class FeatureCommand : IDiscordCommand
             NOTE: New command classes that implement IDiscordCommand are automatically registered in DI.
             No manual registration needed — just create the class and it works on next deploy.
 
+            CODEBASE CONVENTIONS — violating these will introduce bugs:
+            1. N+1 QUERIES: NEVER load entities in a loop. Always load ALL records in ONE query using
+               .Include() + .AsSplitQuery(). One DbContext, one SaveChanges() at the end. NEVER create
+               a new scope/DbContext per record.
+            2. DISCORD REGISTRATION: NEVER modify CommandHandlerService.cs. Commands auto-register via
+               IDiscordCommand. If you MUST modify registration logic, use BulkOverwriteApplicationCommandAsync
+               — NEVER call CreateApplicationCommandAsync in a loop.
+            3. SINGLE RESPONSIBILITY: New code goes in GLaDOS.Discord/Commands/ or GLaDOS.Discord/Services/.
+               GLaDOS.Scheduler/ is for background jobs only. Keep Discord commands out of the scheduler project.
+            4. EXISTING PATTERNS: Before writing code, use Read to study 2-3 existing command files to match
+               naming conventions, using statements, constructor patterns, and error handling style.
+
             WORKFLOW (follow in order — do NOT skip steps):
             1. Read relevant existing code to understand patterns and conventions
             2. Create a new git branch with a descriptive name based on the feature
