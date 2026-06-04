@@ -31,6 +31,9 @@ services:
       - Hangfire__Username=${HANGFIRE_USERNAME}
       - Hangfire__Password=${HANGFIRE_PASSWORD}
       - OpenCode__ApiKey=${OPENCODE_APIKEY}
+      - GitHub__Token=${GITHUB_TOKEN}
+      - GitHub__Owner=${GITHUB_OWNER}
+      - GitHub__Repo=${GITHUB_REPO}
     ports:
       - "8080:8080"
     restart: unless-stopped

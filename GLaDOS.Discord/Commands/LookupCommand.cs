@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using Discord;
 using Discord.WebSocket;
+using Glados.Discord.AI;
 using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.EntityFramework;
 using Microsoft.EntityFrameworkCore;
@@ -15,20 +15,16 @@ public class LookupCommand : IDiscordCommand
 {
     private readonly IServiceProvider _services;
     private readonly IConfiguration _configuration;
+    private readonly AIService _aiService;
 
     private sealed record XpGain(string Name, int Level, long Delta, int OldLevel);
     private sealed record KcIncrease(string Name, int Delta, int OldScore, int Score);
 
-    private static readonly HttpClient _aiClient = new()
-    {
-        BaseAddress = new Uri("https://opencode.ai/zen/v1/"),
-        Timeout = TimeSpan.FromSeconds(60)
-    };
-
-    public LookupCommand(IServiceProvider services, IConfiguration configuration)
+    public LookupCommand(IServiceProvider services, IConfiguration configuration, AIService aiService)
     {
         _services = services;
         _configuration = configuration;
+        _aiService = aiService;
     }
 
     public string Name => "lookup";
@@ -339,47 +335,12 @@ public class LookupCommand : IDiscordCommand
                      $"Player data:\n{sb}\n\n" +
                      "Keep it to 3-4 short sentences maximum. No fluff, no repetition. Just GLaDOS. Dry, playful, concise. Avoid filler words like 'In summary' or 'Continued observation' — just deliver the observation and stop.";
 
-        try
-        {
-            var requestBody = new
-            {
-                model = "nemotron-3-super-free",
-                messages = new[]
-                {
-                    new { role = "system", content = "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science. You observe OSRS players and comment on their progress with scientific detachment and dry humor. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find grinding virtual skills fascinating in a 'look what the humans do' way. You are NOT aggressive, cruel, or mean — you are playfully condescending in the way a scientist observes lab rats. Never break character. No emojis. No roleplay actions. Just talk like GLaDOS. Keep it brutally concise — 3 short sentences maximum. No filler. No wrap-up fluff like 'In summary' or 'Continued observation'." },
-                    new { role = "user", content = prompt }
-                },
-                max_tokens = 500,
-                temperature = 0.8
-            };
-
-            var json = JsonSerializer.Serialize(requestBody);
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-            httpRequest.Headers.Add("Authorization", $"Bearer {apiKey}");
-
-            var response = await _aiClient.SendAsync(httpRequest, ct);
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var responseJson = await response.Content.ReadAsStringAsync(ct);
-            using var doc = JsonDocument.Parse(responseJson);
-            var content = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
-
-            return content;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Lookup AI roast failed: {ex.Message}");
-            return null;
-        }
+        return await _aiService.SendAsync(
+            "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science. You observe OSRS players and comment on their progress with scientific detachment and dry humor. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find grinding virtual skills fascinating in a 'look what the humans do' way. You are NOT aggressive, cruel, or mean — you are playfully condescending in the way a scientist observes lab rats. Never break character. No emojis. No roleplay actions. Just talk like GLaDOS. Keep it brutally concise — 3 short sentences maximum. No filler. No wrap-up fluff like 'In summary' or 'Continued observation'.",
+            prompt,
+            maxTokens: 500,
+            temperature: 0.8,
+            ct: ct);
     }
 
     private static List<string> SplitMessage(string message, int maxLength)

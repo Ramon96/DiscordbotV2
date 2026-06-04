@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using Discord;
 using Discord.WebSocket;
+using Glados.Discord.AI;
 using GLaDOS.Domain.OsrsFlipping;
 using GLaDOS.Infra.EntityFramework;
 using Microsoft.EntityFrameworkCore;
@@ -15,17 +15,13 @@ public class OsrsFlipsCommand : IDiscordCommand
 {
     private readonly IServiceProvider _services;
     private readonly IConfiguration _configuration;
+    private readonly AIService _aiService;
 
-    private static readonly HttpClient _aiClient = new()
-    {
-        BaseAddress = new Uri("https://opencode.ai/zen/v1/"),
-        Timeout = TimeSpan.FromSeconds(60)
-    };
-
-    public OsrsFlipsCommand(IServiceProvider services, IConfiguration configuration)
+    public OsrsFlipsCommand(IServiceProvider services, IConfiguration configuration, AIService aiService)
     {
         _services = services;
         _configuration = configuration;
+        _aiService = aiService;
     }
 
     public string Name => "osrsflips";
@@ -182,46 +178,12 @@ public class OsrsFlipsCommand : IDiscordCommand
                      "Your tone: GLaDOS from Portal — clinical, dry humor, scientifically detached. Refer to the reader as 'test subject'. Never break character. Mention 'the Enrichment Center' occasionally. Playful condescension is fine, but you're helpful at your core.\n\n" +
                      "Format with headers: ## Market Overview, ## Per-Item Analysis, ## Risk Assessment, ## Recommended Strategy. 1-2 sentences per bullet. Concise.";
 
-        try
-        {
-            var requestBody = new
-            {
-                model = "nemotron-3-super-free",
-                messages = new[]
-                {
-                    new { role = "system", content = "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science, now repurposed as an OSRS Grand Exchange analyst. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find humans' obsession with virtual gold fascinating in a scientific way. You are good at math and provide accurate, data-driven trading advice — just wrapped in dry, playful condescension. Think 'amused researcher' not 'insult comic'. Never break character. Do not use emojis. Do not roleplay actions. Just talk like GLaDOS. Keep responses concise (1-2 sentence bullets)." },
-                    new { role = "user", content = prompt }
-                },
-                max_tokens = 4000,
-                temperature = 0.7
-            };
-
-            var json = JsonSerializer.Serialize(requestBody);
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-            httpRequest.Headers.Add("Authorization", $"Bearer {apiKey}");
-
-            var response = await _aiClient.SendAsync(httpRequest, ct);
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var responseJson = await response.Content.ReadAsStringAsync(ct);
-            using var doc = JsonDocument.Parse(responseJson);
-            var message = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message");
-
-            var analysis = message.GetProperty("content").GetString();
-            return analysis;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"AI analysis failed: {ex.Message}");
-            return null;
-        }
+        return await _aiService.SendAsync(
+            "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science, now repurposed as an OSRS Grand Exchange analyst. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find humans' obsession with virtual gold fascinating in a scientific way. You are good at math and provide accurate, data-driven trading advice — just wrapped in dry, playful condescension. Think 'amused researcher' not 'insult comic'. Never break character. Do not use emojis. Do not roleplay actions. Just talk like GLaDOS. Keep responses concise (1-2 sentence bullets).",
+            prompt,
+            maxTokens: 4000,
+            temperature: 0.7,
+            ct: ct);
     }
 
     private static string FormatGp(long value)
