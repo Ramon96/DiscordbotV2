@@ -24,64 +24,31 @@ public partial class FeatureCommand : IDiscordCommand
 
     private const string SpecSystemPrompt =
         """
-        You are an expert software architect. Transform user feature requests into precise technical specifications for a C# .NET 10.0 Discord bot codebase.
+        Design a spec for a C# .NET 10 Discord.Net bot feature. Output ONLY valid JSON (no reasoning):
 
-        Codebase architecture:
-        - Solution GLaDOS.sln: GLaDOS.Core (domain models/DTOs), GLaDOS.Infra (EF Core/PostgreSQL), GLaDOS.Discord (commands/services), GLaDOS.Scheduler (ASP.NET host/Hangfire)
-        - Commands implement IDiscordCommand: string Name, SlashCommandProperties GetCommandDefinition(), Task ExecuteAsync(SocketSlashCommand command, CancellationToken ct)
-        - Commands register in ServiceCollectionExtensions.cs via DI (AddSingleton<IDiscordCommand, T>)
-        - Services in GLaDOS.Discord/Services/, registered via DI
-        - AIService: Glados.Discord.AI.AIService, method SendAsync(systemPrompt, userPrompt, model, maxTokens, temperature, ct) returns string?
-        - GitHubService: Glados.Discord.Services.GitHubService
-        - Commands inject IServiceProvider + IConfiguration via constructor, create scope for DbContext (ApplicationDbContext)
-        - Discord.Net 3.18.0, Entity Framework Core 10 with PostgreSQL
+        Bot: commands in GLaDOS.Discord/Commands/ implement IDiscordCommand. Services in GLaDOS.Discord/Services/. EF Core PostgreSQL via ApplicationDbContext (scoped). DI in ServiceCollectionExtensions.cs. Discord.Net 3.18.
 
-        HARD CONSTRAINTS — NEVER violate these:
-        - NEVER add NuGet packages — note them in manualSteps instead
-        - NEVER modify Program.cs, ServiceCollectionExtensions.cs, .csproj, docker-compose.yml, Dockerfile, .env, appsettings
-        - NEVER create EF migrations or modify ApplicationDbContext/DbContext
-        - NEVER modify existing files — create NEW files only
-        - File paths relative to repo root (e.g., GLaDOS.Discord/Commands/MyCommand.cs)
+        Rules: new files only. Never touch .csproj, Program.cs, ServiceCollectionExtensions.cs, docker-compose.yml, DbContext. NuGet pkgs→manualSteps. Paths relative to repo root.
 
-        IMPORTANT — Clarifications:
-        - If the user's request is vague or has multiple valid interpretations, ask clarifying questions
-        - Each clarification should have a clear question and 2-5 concrete options
-        - Only ask questions that materially affect the implementation
-        - If the request is clear, return an empty clarifications array
-        - Maximum 4 clarification questions
+        If vague, ask ≤4 clarifications with options. If clear, clarifications:[].
 
-        Output ONLY valid JSON (no markdown, no commentary, no reasoning or thinking process):
-        {"title":"string","summary":"string","clarifications":[{"question":"string","options":["string"]}],"files":[{"path":"string","description":"string"}],"manualSteps":["string"]}
+        Schema: {"title":"...","summary":"...","clarifications":[{"question":"...","options":["..."]}],"files":[{"path":"...","description":"..."}],"manualSteps":["..."]}
         """;
 
     private const string CodeSystemPrompt =
         """
-        You are an expert C# .NET 10.0 developer. Write complete, compilable code for Discord bot features using Discord.Net 3.18.0.
+        Write compilable C# .NET 10 Discord.Net 3.18 code. Output ONLY files (no reasoning).
 
-        Patterns to follow:
-        - IDiscordCommand: string Name, SlashCommandProperties GetCommandDefinition(), Task ExecuteAsync(SocketSlashCommand command, CancellationToken ct=default)
-        - Constructor: (IServiceProvider services, IConfiguration configuration) for commands
-        - DB: using var scope = _services.CreateScope(); var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        - AI: inject Glados.Discord.AI.AIService, call _aiService.SendAsync(systemPrompt, userPrompt, model, maxTokens, temperature, ct)
-        - Interaction: await command.DeferAsync() first, then ModifyOriginalResponseAsync for result
-        - EmbedBuilder for rich embeds
-        - Minimal comments, early returns for errors
-        - All using statements included, namespace Glados.Discord.Commands or Glados.Discord.Services
-        - Use GLaDOS.Infra.EntityFramework.ApplicationDbContext for database
-        - Use GLaDOS.Core.Domain for domain models
+        IDiscordCommand: Name, GetCommandDefinition(), ExecuteAsync(SocketSlashCommand, ct).
+        Inject IServiceProvider+IConfiguration. DB: new scope→ApplicationDbContext. AI: AIService.SendAsync().
+        DeferAsync first, ModifyOriginalResponseAsync for result. EmbedBuilder for rich content.
+        Namespace Glados.Discord.Commands or Services. All usings included.
 
-        Output EXACT format for each file (no reasoning, no explanation — just the files):
-        ### FILE: path/FileName.cs
+        Format per file:
+        ### FILE: path/File.cs
         ```csharp
-        // complete compilable code
+        code
         ```
-
-        CRITICAL:
-        - COMPLETE files: namespace, using statements, full class
-        - NEVER add PackageReference or modify .csproj
-        - NEVER create HttpClient instances in new code — use AIService
-        - NEVER new up services — use constructor injection
-        - New command classes get registered in DI by the maintainer (note in manualSteps)
         """;
 
     public FeatureCommand(AIService aiService, GitHubService gitHubService, FeatureGuardService guardService, IConfiguration configuration)
@@ -372,7 +339,7 @@ public partial class FeatureCommand : IDiscordCommand
         if (string.IsNullOrWhiteSpace(apiKey))
             return (null, "AI API key not configured. Set `OpenCode:ApiKey` in the bot configuration (`OPENCODE_APIKEY` in `.env`).");
 
-        var response = await _aiService.SendAsync(SpecSystemPrompt, prompt, SpecModel, maxTokens: 3000, temperature: 0.7, ct: ct);
+        var response = await _aiService.SendAsync(SpecSystemPrompt, prompt, SpecModel, maxTokens: 1500, temperature: 0.7, ct: ct);
 
         if (response is null)
         {

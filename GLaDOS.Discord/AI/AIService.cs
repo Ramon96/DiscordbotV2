@@ -11,7 +11,7 @@ public class AIService
     private static readonly HttpClient _httpClient = new()
     {
         BaseAddress = new Uri("https://opencode.ai/zen/v1/"),
-        Timeout = TimeSpan.FromSeconds(120)
+        Timeout = TimeSpan.FromSeconds(180)
     };
 
     public string? LastError { get; private set; }
