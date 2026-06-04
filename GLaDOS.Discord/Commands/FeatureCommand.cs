@@ -92,7 +92,13 @@ public partial class FeatureCommand : IDiscordCommand
             Console.WriteLine($"[Feature] Failed: {ex}");
             try
             {
-                await ModifyOriginalResponseAsync(command, $"Failed to run feature request: {ex.Message}");
+                var message = ex switch
+                {
+                    TimeoutException => $"Feature request timed out after 14 minutes. Try breaking it into smaller pieces.",
+                    InvalidOperationException when IsProviderError(ex.Message) => $"The AI provider is temporarily unavailable. Please try again in a minute — the free tier occasionally gets busy.",
+                    _ => $"Failed to run feature request: {ex.Message}"
+                };
+                await ModifyOriginalResponseAsync(command, message);
             }
             catch { }
         }
@@ -140,6 +146,7 @@ public partial class FeatureCommand : IDiscordCommand
     {
         var prompt = BuildPrompt(description, workDir);
         var modelsToTry = new List<string>(FallbackModels);
+        var retriesRemaining = 2;
 
         while (modelsToTry.Count > 0)
         {
@@ -170,11 +177,28 @@ public partial class FeatureCommand : IDiscordCommand
                 }
             }
 
+            if (retriesRemaining > 0 && IsProviderError(error))
+            {
+                retriesRemaining--;
+                Console.WriteLine($"[Feature] Provider error, retrying model '{model}' ({retriesRemaining} retries left)");
+                modelsToTry.Insert(0, model);
+                await Task.Delay(TimeSpan.FromSeconds(3), ct);
+                continue;
+            }
+
             var errPreview = error.Length > 800 ? error[..800] + "..." : error;
             throw new InvalidOperationException($"opencode failed (exit {exitCode}):\n```\n{errPreview}\n```");
         }
 
         throw new InvalidOperationException("All available models failed.");
+    }
+
+    private static bool IsProviderError(string error)
+    {
+        return error.Contains("Provider returned error", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("rate limit", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("server error", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("timeout", StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task<(int ExitCode, string Output, string Error)> RunOpencodeProcessAsync(
