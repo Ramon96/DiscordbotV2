@@ -13,6 +13,9 @@ public partial class FeatureCommand : IDiscordCommand
     private readonly IConfiguration _configuration;
 
     private static readonly TimeSpan OpencodeTimeout = TimeSpan.FromMinutes(14);
+    private static readonly SemaphoreSlim ConcurrencyGate = new(2, 2);
+
+    private const string RepoUrl = "https://github.com/ramon96/DiscordbotV2.git";
 
     public FeatureCommand(FeatureGuardService guardService, IConfiguration configuration)
     {
@@ -35,13 +38,6 @@ public partial class FeatureCommand : IDiscordCommand
     {
         await command.DeferAsync();
 
-        if (!Directory.Exists("/repo"))
-        {
-            await command.ModifyOriginalResponseAsync(props =>
-                props.Content = "The repository is not mounted in this container. Contact the bot admin to verify the `/repo` volume mount.");
-            return;
-        }
-
         var description = command.Data.Options.FirstOrDefault(o => o.Name == "description")?.Value as string;
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -58,76 +54,118 @@ public partial class FeatureCommand : IDiscordCommand
             return;
         }
 
-        await command.ModifyOriginalResponseAsync(props =>
-            props.Content = $"Working on your feature... (may take up to 14 minutes for complex requests)\n\n> {description}");
-
-        var prompt = BuildPrompt(description);
+        if (!ConcurrencyGate.Wait(0))
+        {
+            await command.ModifyOriginalResponseAsync(props =>
+                props.Content = "The feature workshop is busy (max 2 concurrent requests). Please wait for a running feature to finish and try again.");
+            return;
+        }
 
         try
         {
-            using var process = new Process
+            await ModifyOriginalResponseAsync(command, $"Working on your feature... (this may take up to 14 minutes)\n\n> {description}");
+
+            var workDir = $"/tmp/feature-{Guid.NewGuid():N}";
+            try
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "opencode",
-                    ArgumentList = { "run", prompt, "--dir", "/repo", "--dangerously-skip-permissions", "--model", "opencode/nemotron-3-super-free" },
-                    WorkingDirectory = "/repo",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+                await CloneRepoAsync(workDir, ct);
 
-            process.Start();
+                var prUrl = await RunOpencodeAsync(workDir, description, ct);
 
-            var outputTask = process.StandardOutput.ReadToEndAsync(ct);
-            var errorTask = process.StandardError.ReadToEndAsync(ct);
-
-            var completed = process.WaitForExit((int)OpencodeTimeout.TotalMilliseconds);
-            if (!completed)
-            {
-                process.Kill(entireProcessTree: true);
-                await command.ModifyOriginalResponseAsync(props =>
-                    props.Content = "Timed out after 14 minutes. The feature might be too complex — try breaking it into smaller pieces, like:\n1. First: just the database model and daily job\n2. Then: the slash commands in a separate request");
-                return;
+                if (prUrl is not null)
+                    await ModifyOriginalResponseAsync(command, $"Pull request created: {prUrl}");
+                else
+                    await ModifyOriginalResponseAsync(command, $"Done! Check the repo for a new PR.");
             }
-
-            var output = await outputTask;
-            var error = await errorTask;
-
-            Console.WriteLine($"[Feature] opencode exit={process.ExitCode}");
-
-            if (process.ExitCode != 0)
+            finally
             {
-                var errPreview = error.Length > 800 ? error[..800] + "..." : error;
-                await command.ModifyOriginalResponseAsync(props =>
-                    props.Content = $"opencode failed (exit {process.ExitCode}):\n```\n{errPreview}\n```");
-                return;
-            }
-
-            var prUrl = ExtractPrUrl(output + error);
-            if (prUrl is not null)
-            {
-                await command.ModifyOriginalResponseAsync(props =>
-                    props.Content = $"Pull request created: {prUrl}");
-            }
-            else
-            {
-                var preview = output.Length > 1500 ? output[..1500] + "..." : output;
-                await command.ModifyOriginalResponseAsync(props =>
-                    props.Content = $"Done, but couldn't find a PR URL in the output:\n```\n{preview}\n```");
+                TryDeleteDirectory(workDir);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Feature] Process failed: {ex}");
-            await command.ModifyOriginalResponseAsync(props =>
-                props.Content = $"Failed to run opencode: {ex.Message}");
+            Console.WriteLine($"[Feature] Failed: {ex}");
+            try
+            {
+                await ModifyOriginalResponseAsync(command, $"Failed to run feature request: {ex.Message}");
+            }
+            catch { }
+        }
+        finally
+        {
+            ConcurrencyGate.Release();
         }
     }
 
-    private static string BuildPrompt(string description)
+    private static async Task CloneRepoAsync(string workDir, CancellationToken ct)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "git",
+            ArgumentList = { "clone", "--depth", "1", RepoUrl, workDir },
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi)!;
+        var output = await process.StandardOutput.ReadToEndAsync(ct);
+        var error = await process.StandardError.ReadToEndAsync(ct);
+        await process.WaitForExitAsync(ct);
+
+        if (process.ExitCode != 0)
+        {
+            var err = string.IsNullOrWhiteSpace(error) ? output : error;
+            throw new InvalidOperationException($"git clone failed (exit {process.ExitCode}): {err}");
+        }
+    }
+
+    private static async Task<string?> RunOpencodeAsync(string workDir, string description, CancellationToken ct)
+    {
+        var prompt = BuildPrompt(description, workDir);
+
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "opencode",
+                ArgumentList = { "run", prompt, "--dir", workDir, "--dangerously-skip-permissions", "--model", "opencode/nemotron-3-super-free" },
+                WorkingDirectory = workDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+
+        var outputTask = process.StandardOutput.ReadToEndAsync(ct);
+        var errorTask = process.StandardError.ReadToEndAsync(ct);
+
+        var completed = process.WaitForExit((int)OpencodeTimeout.TotalMilliseconds);
+        if (!completed)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException("Timed out after 14 minutes. Try breaking the feature into smaller pieces.");
+        }
+
+        var output = await outputTask;
+        var error = await errorTask;
+
+        Console.WriteLine($"[Feature] opencode exit={process.ExitCode}");
+
+        if (process.ExitCode != 0)
+        {
+            var errPreview = error.Length > 800 ? error[..800] + "..." : error;
+            throw new InvalidOperationException($"opencode failed (exit {process.ExitCode}):\n```\n{errPreview}\n```");
+        }
+
+        return ExtractPrUrl(output + error);
+    }
+
+    private static string BuildPrompt(string description, string workDir)
     {
         return $"""
             IMMUTABLE SAFETY RULES — violating any of these is FORBIDDEN:
@@ -138,7 +176,8 @@ public partial class FeatureCommand : IDiscordCommand
             5. NEVER create network listeners, reverse shells, cron jobs, or daemons
             6. NEVER hardcode secrets, API keys, tokens, or connection strings
             7. NEVER modify .gitignore or .git/config
-            8. You operate inside a Docker container — you CANNOT access the host VPS. Only the /repo directory is available.
+            8. You operate inside a Docker container — you CANNOT access the host VPS. Only the repo directory is available.
+            9. You are working in a TEMPORARY isolated clone at {workDir}. Do NOT touch any other directory.
 
             ALLOWED ACTIONS:
             - Create new C# files in GLaDOS.Discord/Commands/ or GLaDOS.Discord/Services/
@@ -165,7 +204,7 @@ public partial class FeatureCommand : IDiscordCommand
             1. Read relevant existing code to understand patterns and conventions
             2. Create a new git branch with a descriptive name based on the feature
             3. Write the new code files
-            4. Run `dotnet build GLaDOS.sln` in /repo — if it FAILS, FIX the errors and try again. DO NOT proceed to step 5 until the build passes with zero errors.
+            4. Run `dotnet build GLaDOS.sln` in the repo — if it FAILS, FIX the errors and try again. DO NOT proceed to step 5 until the build passes with zero errors.
             5. Commit with a descriptive message, push the branch
             6. Create a pull request to main with a clear title and summary
 
@@ -181,5 +220,30 @@ public partial class FeatureCommand : IDiscordCommand
     {
         var match = PrUrlPattern().Match(text);
         return match.Success ? match.Value : null;
+    }
+
+    private static async Task ModifyOriginalResponseAsync(SocketSlashCommand command, string content)
+    {
+        try
+        {
+            await command.ModifyOriginalResponseAsync(props => props.Content = content);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Feature] Failed to update response: {ex.Message}");
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Feature] Failed to clean up {path}: {ex.Message}");
+        }
     }
 }
