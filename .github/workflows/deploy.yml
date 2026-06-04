@@ -46,16 +46,11 @@ jobs:
             echo "GITHUB_OWNER=ramon96" >> .env
             echo "GITHUB_REPO=DiscordbotV2" >> .env
 
-            # Wait for any running opencode feature to finish (max 14 min)
-            for i in $(seq 1 84); do
-              if docker exec glados_scheduler pgrep -x opencode > /dev/null 2>&1; then
-                echo "Waiting for opencode to finish... (attempt $i/30)"
-                sleep 10
-              else
-                echo "No opencode running, proceeding."
-                break
-              fi
-            done
+            # Don't deploy if a feature is in progress
+            if docker exec glados_scheduler pgrep -x opencode > /dev/null 2>&1; then
+              echo "opencode is running a feature — skipping deploy. Push again when it finishes."
+              exit 0
+            fi
 
             docker-compose down
             docker-compose up --build -d
