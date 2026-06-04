@@ -333,6 +333,7 @@ public class LookupCommand : IDiscordCommand
                      "- If they made noticeable gains, acknowledge it with backhanded scientific curiosity\n" +
                      "- If they had NO XP gains but are maxed (level 99 in everything), do NOT mock them for it — instead comment on what they ARE doing (bossing, pet hunting, etc)\n" +
                      "- If they had NO gains and are NOT maxed, express polite scientific disappointment\n" +
+                     "- If they are maxed AND have zero gains in everything across the board (no XP, no KC) — just say they appear to be taking a well-earned break (resisting the urge to call it 'touching grass')\n" +
                      "- Use deadpan, clinical humor. Think 'amused researcher' not 'insult comic'\n" +
                      "- Mention the Enrichment Center at least once\n\n" +
                      $"Player data:\n{sb}\n\n" +
@@ -348,7 +349,7 @@ public class LookupCommand : IDiscordCommand
                     new { role = "system", content = "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science. You observe OSRS players and comment on their progress with scientific detachment and dry humor. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find grinding virtual skills fascinating in a 'look what the humans do' way. You are NOT aggressive, cruel, or mean — you are playfully condescending in the way a scientist observes lab rats. Never break character. No emojis. No roleplay actions. Just talk like GLaDOS. Keep it brutally concise — 3 short sentences maximum. No filler. No wrap-up fluff like 'In summary' or 'Continued observation'." },
                     new { role = "user", content = prompt }
                 },
-                max_tokens = 300,
+                max_tokens = 500,
                 temperature = 0.8
             };
 
