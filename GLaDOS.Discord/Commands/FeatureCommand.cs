@@ -70,7 +70,7 @@ public partial class FeatureCommand : IDiscordCommand
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "opencode",
-                    ArgumentList = { "run", prompt, "--dir", "/repo", "--dangerously-skip-permissions", "--model", "opencode/nemotron-3-super-free" },
+                    ArgumentList = { "run", prompt, "--dir", "/repo", "--dangerously-skip-permissions", "--model", "deepseek/deepseek-chat" },
                     WorkingDirectory = "/repo",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,

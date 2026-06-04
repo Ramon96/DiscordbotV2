@@ -35,6 +35,7 @@ services:
       - GitHub__Owner=${GITHUB_OWNER}
       - GitHub__Repo=${GITHUB_REPO}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - OPENCODE_API_KEY=${OPENCODE_APIKEY}
     ports:
       - "8080:8080"
