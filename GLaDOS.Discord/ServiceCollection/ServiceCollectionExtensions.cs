@@ -27,7 +27,6 @@ public static class ServiceCollectionExtensions
             .AddSingleton<AIService>()
             .AddSingleton<GitHubService>()
             .AddSingleton<FeatureGuardService>()
-            .AddSingleton<FeatureCommand>()
             .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()
             .AddSingleton<IDiscordCommand, ConnectOsrsUser>()
             .AddSingleton<IDiscordCommand, NameChangeOsrsUser>()

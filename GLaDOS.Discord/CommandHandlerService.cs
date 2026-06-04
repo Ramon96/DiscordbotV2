@@ -1,6 +1,5 @@
 using Discord;
 using Discord.WebSocket;
-using Glados.Discord.Commands;
 using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.EntityFramework;
 using Microsoft.EntityFrameworkCore;
@@ -14,20 +13,17 @@ public class CommandHandlerService : IHostedService
     private readonly IEnumerable<IDiscordCommand> _commands;
     private readonly IConfiguration _configuration;
     private readonly IServiceProvider _serviceProvider;
-    private readonly FeatureCommand _featureCommand;
 
     public CommandHandlerService(
         DiscordSocketClient client,
         IEnumerable<IDiscordCommand> commands,
         IConfiguration configuration,
-        IServiceProvider serviceProvider,
-        FeatureCommand featureCommand)
+        IServiceProvider serviceProvider)
     {
         _client = client;
         _commands = commands;
         _configuration = configuration;
         _serviceProvider = serviceProvider;
-        _featureCommand = featureCommand;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -35,8 +31,6 @@ public class CommandHandlerService : IHostedService
         _client.Ready += OnReadyAsync;
         _client.SlashCommandExecuted += OnSlashCommandAsync;
         _client.AutocompleteExecuted += OnAutocompleteAsync;
-        _client.ButtonExecuted += OnButtonExecutedAsync;
-        _client.ModalSubmitted += OnModalSubmittedAsync;
 
         await Task.CompletedTask;
     }
@@ -46,8 +40,6 @@ public class CommandHandlerService : IHostedService
         _client.Ready -= OnReadyAsync;
         _client.SlashCommandExecuted -= OnSlashCommandAsync;
         _client.AutocompleteExecuted -= OnAutocompleteAsync;
-        _client.ButtonExecuted -= OnButtonExecutedAsync;
-        _client.ModalSubmitted -= OnModalSubmittedAsync;
 
         return Task.CompletedTask;
     }
@@ -86,22 +78,6 @@ public class CommandHandlerService : IHostedService
         if (handler != null)
         {
             await handler.ExecuteAsync(command);
-        }
-    }
-
-    private async Task OnButtonExecutedAsync(SocketMessageComponent component)
-    {
-        if (component.Data.CustomId.StartsWith("feature-refine-"))
-        {
-            await _featureCommand.HandleClarifyButtonAsync(component);
-        }
-    }
-
-    private async Task OnModalSubmittedAsync(SocketModal modal)
-    {
-        if (modal.Data.CustomId.StartsWith("feature-clarify-"))
-        {
-            await _featureCommand.HandleClarifyModalAsync(modal);
         }
     }
 

@@ -29,4 +29,15 @@ ENTRYPOINT ["dotnet", "GLaDOS.Discord.dll"]
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final-scheduler
 WORKDIR /app
 COPY --from=publish-scheduler /app/publish/scheduler .
+
+RUN apt-get update && \
+    apt-get install -y curl git && \
+    curl -fsSL https://opencode.ai/install | bash && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git config --global user.email "glados-bot@discord.bot" && \
+    git config --global user.name "GLaDOS Feature Bot" && \
+    git config --global credential.https://github.com.helper '!f() { echo "username=x-access-token"; echo "password=$GITHUB_TOKEN"; }; f'
+
 ENTRYPOINT ["dotnet", "GLaDOS.Scheduler.dll"]
