@@ -121,16 +121,62 @@ public partial class FeatureCommand : IDiscordCommand
         }
     }
 
+    private static readonly string[] FallbackModels =
+    [
+        "opencode/nemotron-3-ultra-free",
+        "opencode/deepseek-v4-flash-free",
+        "opencode/mimo-v2.5-free"
+    ];
+
+    [GeneratedRegex(@"Did you mean: (.+?)\?", RegexOptions.IgnoreCase)]
+    private static partial Regex ModelSuggestionsPattern();
+
     private static async Task<string?> RunOpencodeAsync(string workDir, string description, CancellationToken ct)
     {
         var prompt = BuildPrompt(description, workDir);
+        var modelsToTry = new List<string>(FallbackModels);
 
+        while (modelsToTry.Count > 0)
+        {
+            var model = modelsToTry[0];
+            modelsToTry.RemoveAt(0);
+
+            Console.WriteLine($"[Feature] Trying model: {model}");
+
+            var (exitCode, output, error) = await RunOpencodeProcessAsync(workDir, prompt, model, ct);
+
+            Console.WriteLine($"[Feature] opencode exit={exitCode} model={model}");
+
+            if (exitCode == 0)
+                return ExtractPrUrl(output + error);
+
+            if (modelsToTry.Count > 0 && ContainsModelNotFound(error))
+            {
+                var suggestions = ParseModelSuggestions(error);
+                if (suggestions.Count > 0)
+                {
+                    Console.WriteLine($"[Feature] Model '{model}' not found, trying suggestions: {string.Join(", ", suggestions)}");
+                    modelsToTry.InsertRange(0, suggestions);
+                    continue;
+                }
+            }
+
+            var errPreview = error.Length > 800 ? error[..800] + "..." : error;
+            throw new InvalidOperationException($"opencode failed (exit {exitCode}):\n```\n{errPreview}\n```");
+        }
+
+        throw new InvalidOperationException("All available models failed.");
+    }
+
+    private static async Task<(int ExitCode, string Output, string Error)> RunOpencodeProcessAsync(
+        string workDir, string prompt, string model, CancellationToken ct)
+    {
         using var process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = "opencode",
-                ArgumentList = { "run", prompt, "--dir", workDir, "--dangerously-skip-permissions", "--model", "opencode/nemotron-3-ultra-free" },
+                ArgumentList = { "run", prompt, "--dir", workDir, "--dangerously-skip-permissions", "--model", model },
                 WorkingDirectory = workDir,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -151,18 +197,26 @@ public partial class FeatureCommand : IDiscordCommand
             throw new TimeoutException("Timed out after 14 minutes. Try breaking the feature into smaller pieces.");
         }
 
-        var output = await outputTask;
-        var error = await errorTask;
+        return (process.ExitCode, await outputTask, await errorTask);
+    }
 
-        Console.WriteLine($"[Feature] opencode exit={process.ExitCode}");
+    private static bool ContainsModelNotFound(string error)
+    {
+        return error.Contains("Model not found", StringComparison.OrdinalIgnoreCase);
+    }
 
-        if (process.ExitCode != 0)
-        {
-            var errPreview = error.Length > 800 ? error[..800] + "..." : error;
-            throw new InvalidOperationException($"opencode failed (exit {process.ExitCode}):\n```\n{errPreview}\n```");
-        }
+    private static List<string> ParseModelSuggestions(string error)
+    {
+        var match = ModelSuggestionsPattern().Match(error);
+        if (!match.Success)
+            return [];
 
-        return ExtractPrUrl(output + error);
+        return match.Groups[1].Value
+            .Split(',')
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0)
+            .Select(s => s.StartsWith("opencode/") ? s : $"opencode/{s}")
+            .ToList();
     }
 
     private static string BuildPrompt(string description, string workDir)
