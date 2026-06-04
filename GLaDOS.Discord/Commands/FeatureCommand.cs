@@ -287,7 +287,7 @@ public partial class FeatureCommand : IDiscordCommand
             1. NEVER delete or modify: Program.cs, ServiceCollectionExtensions.cs, any .csproj file, docker-compose.yml, Dockerfile, .env, appsettings*.json, anything in .github/
             2. NEVER run destructive shell commands: rm -rf, rm -r, del, format, shred, dd, mkfs, > /dev/sda
             3. NEVER download or install external software: no apt-get, pip, npm install, curl, wget for executables
-            4. NEVER modify database schema: no EF migrations, no DbContext changes, no ALTER/CREATE/DROP TABLE
+            4. NEVER modify database schema: no ALTER TABLE, no DROP, no modifying existing entities or columns. Creating NEW DbSets and NEW entities for NEW features is allowed when the feature requires it (use `dotnet ef migrations add`). NEVER remove or rename existing tables/columns.
             5. NEVER create network listeners, reverse shells, cron jobs, or daemons
             6. NEVER hardcode secrets, API keys, tokens, or connection strings
             7. NEVER modify .gitignore or .git/config

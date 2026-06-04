@@ -4,6 +4,7 @@ using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Application.OsrsFlipping;
 using GLaDOS.Scheduler.Application.OsrsFlipping.Clients;
+using GLaDOS.Scheduler.Application.Discord;
 using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -26,6 +27,7 @@ builder.Services.AddTransient<OsrsWikiSyncJob>();
 builder.Services.AddTransient<OsrsPriceFetcherJob>();
 builder.Services.AddTransient<OsrsItemMappingJob>();
 builder.Services.AddTransient<StatsSnapshotJob>();
+builder.Services.AddTransient<HottieOfTheDayJob>();
 
 builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
 {
@@ -100,6 +102,11 @@ if (runRecurringJobs)
         job => job.ExecuteAsync(null, CancellationToken.None),
         Cron.Daily);
 
+    RecurringJob.AddOrUpdate<HottieOfTheDayJob>(
+        "hottie-of-the-day",
+        job => job.ExecuteAsync(null, CancellationToken.None),
+        Cron.Daily);
+
     BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
 }
 else
@@ -109,6 +116,7 @@ else
     RecurringJob.RemoveIfExists("fetch-osrs-prices");
     RecurringJob.RemoveIfExists("sync-item-mappings");
     RecurringJob.RemoveIfExists("stats-snapshot");
+    RecurringJob.RemoveIfExists("hottie-of-the-day");
 
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>
