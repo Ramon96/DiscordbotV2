@@ -390,7 +390,10 @@ public partial class FeatureCommand : IDiscordCommand
                 return (null, "The AI returned a response but no JSON was found in it. Please try rephrasing your feature request.");
 
             Console.WriteLine($"[Feature] Extracted JSON ({json.Length} chars)");
-            var spec = JsonSerializer.Deserialize<FeatureSpec>(json);
+            var spec = JsonSerializer.Deserialize<FeatureSpec>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
             if (spec is null)
                 return (null, "The AI returned a response but it could not be parsed as a valid specification. Please try rephrasing your feature request.");
