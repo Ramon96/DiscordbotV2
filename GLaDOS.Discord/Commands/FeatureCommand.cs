@@ -105,9 +105,6 @@ public partial class FeatureCommand : IDiscordCommand
 
     public async Task ExecuteAsync(SocketSlashCommand command, CancellationToken cancellationToken = default)
     {
-        var apiKey = _configuration["OpenCode:ApiKey"];
-        Console.WriteLine($"[Feature] Command invoked. API key present: {!string.IsNullOrWhiteSpace(apiKey)}");
-
         await command.DeferAsync();
 
         var description = command.Data.Options.FirstOrDefault(o => o.Name == "description")?.Value as string;
@@ -137,11 +134,11 @@ public partial class FeatureCommand : IDiscordCommand
         await command.ModifyOriginalResponseAsync(props =>
             props.Content = $"Analyzing your feature request and getting to work...\n\n> {description}");
 
-        var spec = await GenerateSpecAsync(description, cancellationToken);
+        var (spec, specError) = await GenerateSpecAsync(description, cancellationToken);
         if (spec is null)
         {
             await command.ModifyOriginalResponseAsync(props =>
-                props.Content = "Failed to analyze the feature request. The AI service may be unavailable. Please try again later.");
+                props.Content = specError ?? "Failed to analyze the feature request. The AI service may be unavailable. Please try again later.");
             return;
         }
 
@@ -289,11 +286,11 @@ public partial class FeatureCommand : IDiscordCommand
         await modal.ModifyOriginalResponseAsync(props =>
             props.Content = $"Refining spec with your clarifications...\n\n> {pending.Spec.Title}");
 
-        var spec = await GenerateSpecAsync(enrichedDescription, CancellationToken.None);
+        var (spec, specError) = await GenerateSpecAsync(enrichedDescription, CancellationToken.None);
         if (spec is null)
         {
             await modal.ModifyOriginalResponseAsync(props =>
-                props.Content = "Failed to refine the specification. The AI service may be unavailable. Please try again later.");
+                props.Content = specError ?? "Failed to refine the specification. The AI service may be unavailable.");
             return;
         }
 
@@ -361,7 +358,7 @@ public partial class FeatureCommand : IDiscordCommand
         }
     }
 
-    private async Task<FeatureSpec?> GenerateSpecAsync(string userRequest, CancellationToken ct)
+    private async Task<(FeatureSpec? Spec, string? Error)> GenerateSpecAsync(string userRequest, CancellationToken ct)
     {
         var prompt = $"""
             Feature request: "{userRequest}"
@@ -370,12 +367,17 @@ public partial class FeatureCommand : IDiscordCommand
             """;
 
         Console.WriteLine($"[Feature] Sending spec request for: {userRequest[..Math.Min(userRequest.Length, 100)]}");
+
+        var apiKey = _configuration["OpenCode:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return (null, "AI API key not configured. Set `OpenCode:ApiKey` in the bot configuration (`OPENCODE_APIKEY` in `.env`).");
+
         var response = await _aiService.SendAsync(SpecSystemPrompt, prompt, SpecModel, maxTokens: 3000, temperature: 0.7, ct: ct);
 
         if (response is null)
         {
-            Console.WriteLine("[Feature] AIService.SendAsync returned null — check API key or network.");
-            return null;
+            Console.WriteLine("[Feature] AIService.SendAsync returned null.");
+            return (null, "The AI service did not respond. Possible causes:\n- OpenCode API is down\n- Network error reaching opencode.ai\n- Invalid or expired API key\n- Request timed out (120s)\n\nCheck the bot's docker logs for details.");
         }
 
         Console.WriteLine($"[Feature] Raw AI response ({response.Length} chars): {response[..Math.Min(response.Length, 300)]}");
@@ -383,25 +385,25 @@ public partial class FeatureCommand : IDiscordCommand
         try
         {
             var json = ExtractJson(response);
+            if (json.Length == 0)
+                return (null, "The AI returned a response but no JSON was found in it. Please try rephrasing your feature request.");
+
             Console.WriteLine($"[Feature] Extracted JSON ({json.Length} chars)");
             var spec = JsonSerializer.Deserialize<FeatureSpec>(json);
 
             if (spec is null)
-            {
-                Console.WriteLine("[Feature] Deserialized spec is null.");
-                return null;
-            }
+                return (null, "The AI returned a response but it could not be parsed as a valid specification. Please try rephrasing your feature request.");
 
             if (string.IsNullOrWhiteSpace(spec.Title))
             {
                 Console.WriteLine($"[Feature] Spec has no title. JSON: {json[..Math.Min(json.Length, 200)]}");
-                return null;
+                return (null, "The AI returned a specification with no title. Please try rephrasing your feature request.");
             }
 
             if (spec.Files is null || spec.Files.Count == 0)
             {
                 Console.WriteLine($"[Feature] Spec has no files. JSON: {json[..Math.Min(json.Length, 200)]}");
-                return null;
+                return (null, "The AI returned a specification with no files to create. Please try a more specific feature request.");
             }
 
             spec = spec with
@@ -411,12 +413,12 @@ public partial class FeatureCommand : IDiscordCommand
             };
 
             Console.WriteLine($"[Feature] Spec OK: title='{spec.Title}', files={spec.Files.Count}, clarifications={spec.Clarifications.Count}");
-            return spec;
+            return (spec, null);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[Feature] Failed to parse spec JSON: {ex.GetType().Name}: {ex.Message}\nResponse: {response[..Math.Min(response.Length, 500)]}");
-            return null;
+            return (null, $"The AI returned a malformed response that could not be parsed.\n\nError: {ex.GetType().Name}: {ex.Message}\n\nPlease try rephrasing your feature request.");
         }
     }
 
