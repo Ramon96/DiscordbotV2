@@ -50,6 +50,11 @@ public class HottieOfTheDayJob : IHangfireJob
             return;
         }
 
+        _logger.LogInformation("Guild: {Name}, downloading members...", guild.Name);
+        context.WriteLine($"Guild: {guild.Name}, downloading members...");
+        await guild.DownloadUsersAsync();
+        _logger.LogInformation("Members downloaded: {Count} total", guild.Users.Count);
+
         var members = guild.Users
             .Where(u => !u.IsBot && !u.IsWebhook)
             .ToList();
