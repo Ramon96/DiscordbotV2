@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Reflection;
+using Discord;
 using Discord.WebSocket;
 using Glados.Discord.AI;
 using Glados.Discord.Commands;
@@ -27,14 +28,18 @@ public static class ServiceCollectionExtensions
             .AddSingleton<AIService>()
             .AddSingleton<GitHubService>()
             .AddSingleton<FeatureGuardService>()
-            .AddSingleton<IDiscordCommand, AddDiscordUserCommand>()
-            .AddSingleton<IDiscordCommand, ConnectOsrsUser>()
-            .AddSingleton<IDiscordCommand, NameChangeOsrsUser>()
-            .AddSingleton<IDiscordCommand, OsrsFlipsCommand>()
-            .AddSingleton<IDiscordCommand, LookupCommand>()
-            .AddSingleton<IDiscordCommand, FeatureCommand>()
             .AddHostedService<CommandHandlerService>()
             .AddHostedService<DiscordClient>();
+
+        var commandType = typeof(IDiscordCommand);
+        var commandTypes = Assembly.GetExecutingAssembly().GetTypes()
+            .Where(t => t is { IsAbstract: false, IsInterface: false } && commandType.IsAssignableFrom(t));
+
+        foreach (var type in commandTypes)
+        {
+            Console.WriteLine($"Auto-registered command: {type.Name}");
+            services.AddSingleton(typeof(IDiscordCommand), type);
+        }
 
         return collection;
     }

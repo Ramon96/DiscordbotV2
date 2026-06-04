@@ -146,6 +146,9 @@ public partial class FeatureCommand : IDiscordCommand
             - Create git branches, commit, push, and open PRs (use bash)
             - Read any existing files to understand the codebase
 
+            NOTE: New command classes that implement IDiscordCommand are automatically registered in DI.
+            No manual registration needed — just create the class and it works on next deploy.
+
             WORKFLOW (follow in order — do NOT skip steps):
             1. Read relevant existing code to understand patterns and conventions
             2. Create a new git branch with a descriptive name based on the feature
