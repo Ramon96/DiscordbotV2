@@ -26,53 +26,47 @@ public class StatsSnapshotJob : IHangfireJob
     {
         _logger.LogInformation("Starting stats snapshot job");
 
-        List<Guid> userIds;
-        using (var scope = _scopeFactory.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            userIds = await dbContext.Set<OldschoolRunescapeUser>()
-                .Select(u => u.Id)
-                .ToListAsync(cancellationToken);
-        }
-
         var snapshotDate = DateTime.UtcNow.Date;
+
+        using var scope = _scopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var existingSnapshotUserIds = await dbContext.Set<OldschoolRunescapeStatsSnapshot>()
+            .Where(s => s.SnapshotDate == snapshotDate)
+            .Select(s => s.OldschoolRunescapeUserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var existingSet = new HashSet<Guid>(existingSnapshotUserIds);
+
+        var allUsers = await dbContext.Set<OldschoolRunescapeUser>()
+            .Include(u => u.Stats)
+            .Include(u => u.Activities)
+            .AsSplitQuery()
+            .Where(u => u.Stats.Any())
+            .ToListAsync(cancellationToken);
+
+        var usersNeedingSnapshot = allUsers
+            .Where(u => !existingSet.Contains(u.Id))
+            .ToList();
+
+        _logger.LogInformation("Found {Count} users needing snapshots (out of {Total})",
+            usersNeedingSnapshot.Count, allUsers.Count);
+
         var progressBar = context.WriteProgressBar();
 
-        for (var i = 0; i < userIds.Count; i++)
+        for (var i = 0; i < usersNeedingSnapshot.Count; i++)
         {
-            var progress = (double)(i + 1) / userIds.Count * 100;
+            var progress = (double)(i + 1) / usersNeedingSnapshot.Count * 100;
             progressBar.SetValue(progress);
 
-            var userId = userIds[i];
+            var user = usersNeedingSnapshot[i];
 
             try
             {
-                using var scope = _scopeFactory.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                var user = await dbContext.Set<OldschoolRunescapeUser>()
-                    .Include(u => u.Stats)
-                    .Include(u => u.Activities)
-                    .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-
-                if (user?.Stats == null || !user.Stats.Any())
-                {
-                    _logger.LogDebug("Skipping snapshot for {Username} - no stats yet", user?.Username);
-                    continue;
-                }
-
-                var existingSnapshot = await dbContext.Set<OldschoolRunescapeStatsSnapshot>()
-                    .AnyAsync(s => s.OldschoolRunescapeUserId == userId && s.SnapshotDate == snapshotDate, cancellationToken);
-
-                if (existingSnapshot)
-                {
-                    _logger.LogDebug("Snapshot already exists for {Username} on {Date}", user.Username, snapshotDate);
-                    continue;
-                }
-
                 var statSnapshots = user.Stats.Select(stat => new OldschoolRunescapeStatsSnapshot
                 {
-                    OldschoolRunescapeUserId = userId,
+                    OldschoolRunescapeUserId = user.Id,
                     SnapshotDate = snapshotDate,
                     SkillId = stat.SkillId,
                     Name = stat.Name,
@@ -83,7 +77,7 @@ public class StatsSnapshotJob : IHangfireJob
 
                 var activitySnapshots = user.Activities.Select(act => new OldschoolRunescapeActivitySnapshot
                 {
-                    OldschoolRunescapeUserId = userId,
+                    OldschoolRunescapeUserId = user.Id,
                     SnapshotDate = snapshotDate,
                     ActivityId = act.ActivityId,
                     Name = act.Name,
@@ -93,20 +87,21 @@ public class StatsSnapshotJob : IHangfireJob
 
                 dbContext.Set<OldschoolRunescapeStatsSnapshot>().AddRange(statSnapshots);
                 dbContext.Set<OldschoolRunescapeActivitySnapshot>().AddRange(activitySnapshots);
-                await dbContext.SaveChangesAsync(cancellationToken);
 
                 context.WriteLine($"Snapshot saved for {user.Username}");
             }
             catch (Exception ex)
             {
                 context.SetTextColor(ConsoleTextColor.Red);
-                context.WriteLine($"[Error] Snapshot failed for user {userId}: {ex.Message}");
+                context.WriteLine($"[Error] Snapshot failed for user {user.Username}: {ex.Message}");
                 context.ResetTextColor();
-                _logger.LogError(ex, "Snapshot failed for user {UserId}", userId);
+                _logger.LogError(ex, "Snapshot failed for user {Username}", user.Username);
             }
         }
 
-        _logger.LogInformation("Stats snapshot job completed. {Count} users processed", userIds.Count);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Stats snapshot job completed. {Count} users processed", usersNeedingSnapshot.Count);
         context.WriteLine("Completed stats snapshot job.");
     }
 }

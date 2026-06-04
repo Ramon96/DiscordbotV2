@@ -12,10 +12,9 @@ using Hangfire.Console;
 using Hangfire.Server;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace GLaDOS.Scheduler.Application.OldschoolRunescape;
 
-[DisableConcurrentExecution(0)] 
+[DisableConcurrentExecution(600)]
 [AutomaticRetry(Attempts = 1)]
 public class HiscoreJob : IHangfireJob
 {
@@ -39,47 +38,35 @@ public class HiscoreJob : IHangfireJob
         var progressBar = context.WriteProgressBar();
         _logger.LogInformation("Starting hiscore job");
 
-        List<Guid> userIds;
         var updates = new List<(OldschoolRunescapeUser User, OldschoolRunescapeHiscoreChanges Changes)>();
 
-        using (var scope = _scopeFactory.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            userIds = await dbContext.Set<OldschoolRunescapeUser>()
-                .Select(user => user.Id)
-                .ToListAsync(cancellationToken);
-        }
+        using var scope = _scopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        for (int i = 0; i < userIds.Count; i++)
+        var allUsers = await dbContext.Set<OldschoolRunescapeUser>()
+            .Include(user => user.Stats)
+            .Include(user => user.Activities)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        context.WriteLine($"Loaded {allUsers.Count} users. Starting sync...");
+
+        for (int i = 0; i < allUsers.Count; i++)
         {
-            double progress = (double)(i + 1) / userIds.Count * 100;
+            double progress = (double)(i + 1) / allUsers.Count * 100;
             progressBar.SetValue(progress);
 
-            var userId = userIds[i];
-            
-
-            using var scope = _scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var user = await dbContext.Set<OldschoolRunescapeUser>()
-                .Include(user => user.Stats)
-                .Include(user => user.Activities)
-                .FirstOrDefaultAsync(user => user.Id == userId, cancellationToken);
-
-            if (user == null)
-            {
-                continue;
-            }
+            var user = allUsers[i];
 
             _logger.LogInformation("Fetching hiscores for user: {Username}", user.Username);
             context.WriteLine($"Processing user: {user.Username}...");
-            
+
             OldschoolRunescapeHiscoreResponse? freshData;
 
             try
             {
                 freshData = await _client.GetHiScoresByUsernameAsync(
-                    new OldschoolRunescapeHiscoreRequest { Username = user.Username }, 
+                    new OldschoolRunescapeHiscoreRequest { Username = user.Username },
                     cancellationToken);
             }
             catch (Exception ex)
@@ -89,15 +76,15 @@ public class HiscoreJob : IHangfireJob
                 context.ResetTextColor();
 
                 _logger.LogError(ex, "Failed to fetch hiscores for {Username}", user.Username);
-                throw; 
+                continue;
             }
-            
+
             if (freshData == null)
             {
                 context.SetTextColor(ConsoleTextColor.Yellow);
                 context.WriteLine($"[Warning] User '{user.Username}' not found in hiscores.");
                 context.ResetTextColor();
-    
+
                 _logger.LogWarning("User '{Username}' not found in hiscores.", user.Username);
                 continue;
             }
@@ -112,7 +99,6 @@ public class HiscoreJob : IHangfireJob
                 dbContext.Set<OldschoolRunescapeStat>().AddRange(newStats);
                 dbContext.Set<OldschoolRunescapeActivity>().AddRange(newActivities);
 
-                await dbContext.SaveChangesAsync(cancellationToken);
                 continue;
             }
 
@@ -139,24 +125,20 @@ public class HiscoreJob : IHangfireJob
                 activity.Rank = change.NewRank;
             }
 
-            await dbContext.SaveChangesAsync(cancellationToken);
             updates.Add((user, changes));
-
-            if (!updates.Any())
-            {
-                _logger.LogInformation("No updates to process after checking user: {Username}", user.Username);
-                continue;
-            }
 
             _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}",
                 changes.StatChanges.Count, changes.ActivityChanges.Count, user.Username);
-            
-            if (changes.HasChanges)
-            {
-                context.SetTextColor(ConsoleTextColor.Green);
-                context.WriteLine($"[Update] {user.Username}: +{changes.StatChanges.Count} stats.");
-                context.ResetTextColor();
-            }
+
+            context.SetTextColor(ConsoleTextColor.Green);
+            context.WriteLine($"[Update] {user.Username}: +{changes.StatChanges.Count} stats.");
+            context.ResetTextColor();
+        }
+
+        if (updates.Any())
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Saved {Count} user updates to database", updates.Count);
         }
 
         try

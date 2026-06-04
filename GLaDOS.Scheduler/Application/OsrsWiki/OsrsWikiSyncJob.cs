@@ -14,7 +14,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GLaDOS.Scheduler.Application;
 
-
 [DisableConcurrentExecution(0)]
 [AutomaticRetry(Attempts = 0)]
 public class OsrsWikiSyncJob : IHangfireJob
@@ -23,7 +22,7 @@ public class OsrsWikiSyncJob : IHangfireJob
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OsrsWikiSyncJob> _logger;
     private readonly DiscordNotificationService _notificationService;
-    
+
     public OsrsWikiSyncJob(IOsrsWikiSyncClient client, IServiceScopeFactory scopeFactory, ILogger<OsrsWikiSyncJob> logger, DiscordNotificationService notificationService)
     {
         _client = client;
@@ -34,86 +33,68 @@ public class OsrsWikiSyncJob : IHangfireJob
 
     public async Task ExecuteAsync(PerformContext context, CancellationToken cancellationToken = default)
     {
-        List<Guid> userIds;
         var allUpdates = new List<(OldschoolRunescapeUser User, OsrsWikiSyncChanges Changes)>();
 
+        using var scope = _scopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
         context.WriteLine("Fetching users eligible for Wiki Sync...");
-        
-        using (var scope = _scopeFactory.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            userIds = await dbContext.OldschoolRunescapeUsers
-                .Where(osrsUser => osrsUser.WikiSyncEnabled ||
-                                   (osrsUser.ModifiedDate < DateTime.UtcNow.AddHours(-24)))
-                .Select(user => user.Id)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-        }
-        
+        var users = await dbContext.OldschoolRunescapeUsers
+            .Where(osrsUser => osrsUser.WikiSyncEnabled ||
+                               (osrsUser.ModifiedDate < DateTime.UtcNow.AddHours(-24)))
+            .Include(user => user.CollectionLog)
+            .Include(user => user.Diaries)
+            .Include(user => user.Songs)
+            .Include(user => user.Quests)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
         var progressBar = context.WriteProgressBar();
-        context.WriteLine($"Found {userIds.Count} users to sync.");
+        context.WriteLine($"Found {users.Count} users to sync.");
 
-        for (int i = 0; i < userIds.Count; i++)
+        for (int i = 0; i < users.Count; i++)
         {
-            var userId = userIds[i];
-            var progress = (double)(i + 1) / userIds.Count * 100;
+            var user = users[i];
+            var progress = (double)(i + 1) / users.Count * 100;
             progressBar.SetValue(progress);
-            
+
             try
             {
-                using var scope = _scopeFactory.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                
-                var user = await dbContext.Set<OldschoolRunescapeUser>()
-                    .Include(user => user.CollectionLog)
-                    .Include(user => user.Diaries)
-                    .Include(user => user.Songs)
-                    .Include(user => user.Quests)
-                    .AsSplitQuery()
-                    .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-
-                if (user == null)
-                {
-                    continue;
-                }
-                
                 var request =
                     await _client.GetOsrsWikiSyncDataAsync(new OsrsWikiSyncRequest { Username = user.Username },
                         cancellationToken);
-                
+
                 if (request == null)
                 {
                     _logger.LogWarning("User '{Username}' not found in OSRS Wiki.", user.Username);
                     user.WikiSyncEnabled = false;
-                    await dbContext.SaveChangesAsync(cancellationToken);
                     continue;
                 }
-                
+
                 user.ModifiedDate = DateTime.UtcNow;
-                
+
                 if (user.CollectionLog == null || !user.Quests.Any() || !user.Diaries.Any() || !user.Songs.Any())
                 {
                     InitializeUserData(user, request);
-                    await dbContext.SaveChangesAsync(cancellationToken);
-                    continue; 
+                    continue;
                 }
 
                 var changes = new OsrsWikiSyncChanges();
-                
+
                 var incomingLogIds = request.CollectionLog?.ToList() ?? [];
                 var newItems = incomingLogIds.Except(user.CollectionLog.ItemIds).ToList();
-                
+
                 if (newItems.Any())
                 {
                     changes.NewCollectionLogItems.AddRange(newItems);
                     user.CollectionLog.ItemIds = incomingLogIds;
                 }
-                
+
                 var incomingQuests = request.ToQuestEntities(user.Id);
                 var currentQuestMap = user.Quests.ToDictionary(quest => quest.Name, quest => quest);
-                
-                var questsToProcess = incomingQuests.Where(incoming => 
+
+                var questsToProcess = incomingQuests.Where(incoming =>
                 {
                     if (currentQuestMap.TryGetValue(incoming.Name, out var existing))
                     {
@@ -121,7 +102,7 @@ public class OsrsWikiSyncJob : IHangfireJob
                     }
                     return true;
                 }).ToList();
-                
+
                 foreach (var incQuest in questsToProcess)
                 {
                     if (currentQuestMap.TryGetValue(incQuest.Name, out var existing))
@@ -132,13 +113,13 @@ public class OsrsWikiSyncJob : IHangfireJob
                     {
                         user.Quests.Add(incQuest);
                     }
-                    
+
                     if (incQuest.Status == QuestStatus.Completed)
                     {
                         changes.CompletedQuests.Add(incQuest.Name);
                     }
                 }
-                
+
                 var incomingSongs = request.ToMusicEntities(user.Id);
                 var currentSongMap = user.Songs.ToDictionary(song => song.Song, song => song);
 
@@ -146,7 +127,6 @@ public class OsrsWikiSyncJob : IHangfireJob
                 {
                     if (currentSongMap.TryGetValue(incSong.Song, out var existing))
                     {
-
                         if (incSong.IsUnlocked && !existing.IsUnlocked)
                         {
                             existing.IsUnlocked = true;
@@ -165,59 +145,55 @@ public class OsrsWikiSyncJob : IHangfireJob
                 }
 
                 var currentDiaryMap = user.Diaries.ToDictionary(diary => diary.Region, diary => diary);
-                
+
                 if (request.AchievementDiaries != null)
                 {
                     foreach (var (region, apiData) in request.AchievementDiaries)
                     {
                         if (!currentDiaryMap.TryGetValue(region, out var dbDiary))
                         {
-                            dbDiary = new OsrsWikiDiary 
-                            { 
-                                Region = region, 
-                                OldschoolRunescapeUserId = user.Id 
+                            dbDiary = new OsrsWikiDiary
+                            {
+                                Region = region,
+                                OldschoolRunescapeUserId = user.Id
                             };
                             user.Diaries.Add(dbDiary);
                             continue;
                         }
-                        
+
                         CheckAndUpdateTier(dbDiary.Easy, apiData.Easy, region, "Easy", changes);
                         CheckAndUpdateTier(dbDiary.Medium, apiData.Medium, region, "Medium", changes);
                         CheckAndUpdateTier(dbDiary.Hard, apiData.Hard, region, "Hard", changes);
                         CheckAndUpdateTier(dbDiary.Elite, apiData.Elite, region, "Elite", changes);
                     }
                 }
-                
+
                 if (!changes.HasChanges)
                 {
                     _logger.LogInformation("No changes detected for user: {Username}", user.Username);
                     context.WriteLine($"- {user.Username}: No new data found.");
-                    await dbContext.SaveChangesAsync(cancellationToken);
                     continue;
                 }
-                
-                
-                await dbContext.SaveChangesAsync(cancellationToken);
+
                 allUpdates.Add((user, changes));
-                
+
                 context.SetTextColor(ConsoleTextColor.Green);
                 context.WriteLine($"[Success] {user.Username}: Updated {changes.NewCollectionLogItems.Count} items, {changes.CompletedQuests.Count} quests.");
                 context.ResetTextColor();
-                
-                
-                _logger.LogInformation("Successfully synced OSRS Wiki data for userId {userId}", userId);
 
-                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                _logger.LogInformation("Successfully synced OSRS Wiki data for userId {userId}", user.Id);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Error syncing OSRS Wiki data for userId {userId}", userId);
+                _logger.LogError(e, "Error syncing OSRS Wiki data for userId {userId}", user.Id);
                 context.SetTextColor(ConsoleTextColor.Red);
-                context.WriteLine($"[Error] Failed to sync userId {userId}: {e.Message}");
+                context.WriteLine($"[Error] Failed to sync userId {user.Id}: {e.Message}");
                 context.ResetTextColor();
             }
         }
-        
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
         if (allUpdates.Any())
         {
             context.WriteLine("Sending Discord notifications...");
@@ -234,28 +210,27 @@ public class OsrsWikiSyncJob : IHangfireJob
 
         context.WriteLine("Job finished.");
     }
-    
+
     private void InitializeUserData(OldschoolRunescapeUser user, OsrsWikiSyncResponse request)
     {
         if (user.CollectionLog == null) user.CollectionLog = request.ToCollectionLogEntity(user.Id);
         if (!user.Quests.Any()) user.Quests.AddRange(request.ToQuestEntities(user.Id));
         if (!user.Diaries.Any()) user.Diaries.AddRange(request.ToDiaryEntities(user.Id));
         if (!user.Songs.Any()) user.Songs.AddRange(request.ToMusicEntities(user.Id));
-        
+
         user.WikiSyncEnabled = true;
     }
-    
+
     private void CheckAndUpdateTier(DiaryTier dbTier, DiaryDifficulty? apiTier, string region, string tierName, OsrsWikiSyncChanges changes)
     {
         if (apiTier == null) return;
-        
+
         dbTier.Tasks = apiTier.Tasks.ToList();
-        
+
         if (apiTier.Complete && !dbTier.IsComplete)
         {
             dbTier.IsComplete = true;
             changes.CompletedDiaries.Add((region, tierName));
         }
     }
-
 }
