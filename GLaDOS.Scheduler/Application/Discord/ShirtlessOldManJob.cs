@@ -65,13 +65,13 @@ public class ShirtlessOldManJob : IHangfireJob
         }
 
         var winner = eligibleMembers[Random.Shared.Next(eligibleMembers.Count)];
-        var imageUrl = await _imageService.GetRandomImageUrlAsync(cancellationToken);
+        var result = await _imageService.GetRandomImageUrlAsync(cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(imageUrl))
+        if (result.ImageUrl == null)
         {
-            _logger.LogWarning("Failed to fetch shirtless old man image");
+            _logger.LogWarning("Failed to fetch shirtless old man image: {Error}", result.Error);
             context.SetTextColor(ConsoleTextColor.Red);
-            context.WriteLine("Failed to fetch image from Unsplash API.");
+            context.WriteLine($"Failed to fetch image from Unsplash API: {result.Error}");
             context.ResetTextColor();
             return;
         }
@@ -90,7 +90,7 @@ public class ShirtlessOldManJob : IHangfireJob
 
         var message = $"<@{winner.Id}> check dit! :older_man:";
         await channel.SendMessageAsync(message, embed: new global::Discord.EmbedBuilder()
-            .WithImageUrl(imageUrl)
+            .WithImageUrl(result.ImageUrl)
             .WithColor(global::Discord.Color.Gold)
             .Build());
 

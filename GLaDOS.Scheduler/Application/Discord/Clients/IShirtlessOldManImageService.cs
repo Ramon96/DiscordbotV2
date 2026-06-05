@@ -1,6 +1,8 @@
 namespace GLaDOS.Scheduler.Application.Discord.Clients;
 
+public record ShirtlessOldManImageResult(string? ImageUrl, string? Error);
+
 public interface IShirtlessOldManImageService
 {
-    Task<string?> GetRandomImageUrlAsync(CancellationToken cancellationToken = default);
+    Task<ShirtlessOldManImageResult> GetRandomImageUrlAsync(CancellationToken cancellationToken = default);
 }
