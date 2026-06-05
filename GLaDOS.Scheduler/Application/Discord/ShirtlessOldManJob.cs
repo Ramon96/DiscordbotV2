@@ -2,6 +2,7 @@ using Discord.WebSocket;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.Server;
+using GLaDOS.Scheduler.Application.Discord.Clients;
 using GLaDOS.Scheduler.Application.Hangfire.Contracts;
 
 namespace GLaDOS.Scheduler.Application.Discord;
@@ -12,26 +13,18 @@ public class ShirtlessOldManJob : IHangfireJob
 {
     private readonly ILogger<ShirtlessOldManJob> _logger;
     private readonly DiscordSocketClient _discord;
-    private readonly IConfiguration _configuration;
+    private readonly IShirtlessOldManImageService _imageService;
 
     private const ulong GeneralChannelId = 867074325824012382;
-
-    private static readonly string[] ImageUrls =
-    [
-        "https://i.imgur.com/2Cq0Wxk.jpeg",
-        "https://i.imgur.com/L1fRt0C.jpeg",
-        "https://i.imgur.com/g5mFZq5.jpeg",
-        "https://i.imgur.com/3X0H0nH.jpeg",
-    ];
 
     public ShirtlessOldManJob(
         ILogger<ShirtlessOldManJob> logger,
         DiscordSocketClient discord,
-        IConfiguration configuration)
+        IShirtlessOldManImageService imageService)
     {
         _logger = logger;
         _discord = discord;
-        _configuration = configuration;
+        _imageService = imageService;
     }
 
     public async Task ExecuteAsync(PerformContext context, CancellationToken cancellationToken = default)
@@ -72,7 +65,16 @@ public class ShirtlessOldManJob : IHangfireJob
         }
 
         var winner = eligibleMembers[Random.Shared.Next(eligibleMembers.Count)];
-        var imageUrl = ImageUrls[Random.Shared.Next(ImageUrls.Length)];
+        var imageUrl = await _imageService.GetRandomImageUrlAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            _logger.LogWarning("Failed to fetch shirtless old man image");
+            context.SetTextColor(ConsoleTextColor.Red);
+            context.WriteLine("Failed to fetch image from Unsplash API.");
+            context.ResetTextColor();
+            return;
+        }
 
         _logger.LogInformation("Selected member: {Username} ({Id})", winner.Username, winner.Id);
 

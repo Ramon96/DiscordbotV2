@@ -5,6 +5,7 @@ using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Application.OsrsFlipping;
 using GLaDOS.Scheduler.Application.OsrsFlipping.Clients;
 using GLaDOS.Scheduler.Application.Discord;
+using GLaDOS.Scheduler.Application.Discord.Clients;
 using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -36,6 +37,14 @@ builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.DefaultRequestHeaders.Add("User-Agent", "MyDiscordBot - Market Analyzer Project");
+});
+
+builder.Services.AddHttpClient<IShirtlessOldManImageService, ShirtlessOldManImageService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.unsplash.com/");
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Add("Accept-Version", "v1");
 });
 
 

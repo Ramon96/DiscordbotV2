@@ -34,6 +34,7 @@ services:
       - GitHub__Token=${GITHUB_TOKEN}
       - GitHub__Owner=${GITHUB_OWNER}
       - GitHub__Repo=${GITHUB_REPO}
+      - Unsplash__AccessKey=${UNSPLASH_ACCESS_KEY}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - OPENCODE_API_KEY=${OPENCODE_APIKEY}
     ports:
