@@ -41,10 +41,9 @@ builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
 
 builder.Services.AddHttpClient<IShirtlessOldManImageService, ShirtlessOldManImageService>(client =>
 {
-    client.BaseAddress = new Uri("https://api.unsplash.com/");
+    client.BaseAddress = new Uri("https://www.reddit.com/");
     client.Timeout = TimeSpan.FromSeconds(15);
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.DefaultRequestHeaders.Add("Accept-Version", "v1");
+    client.DefaultRequestHeaders.Add("User-Agent", "MyDiscordBot/1.0 (ShirtlessOldManJob)");
 });
 
 

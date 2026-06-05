@@ -71,7 +71,7 @@ public class ShirtlessOldManJob : IHangfireJob
         {
             _logger.LogWarning("Failed to fetch shirtless old man image: {Error}", result.Error);
             context.SetTextColor(ConsoleTextColor.Red);
-            context.WriteLine($"Failed to fetch image from Unsplash API: {result.Error}");
+            context.WriteLine($"Failed to fetch image: {result.Error}");
             context.ResetTextColor();
             return;
         }
