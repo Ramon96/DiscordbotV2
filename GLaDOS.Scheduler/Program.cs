@@ -5,6 +5,7 @@ using GLaDOS.Scheduler.Application.OldschoolRunescape;
 using GLaDOS.Scheduler.Application.OsrsFlipping;
 using GLaDOS.Scheduler.Application.OsrsFlipping.Clients;
 using GLaDOS.Scheduler.Application.Discord;
+using GLaDOS.Scheduler.Application.Discord.Clients;
 using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -28,6 +29,7 @@ builder.Services.AddTransient<OsrsPriceFetcherJob>();
 builder.Services.AddTransient<OsrsItemMappingJob>();
 builder.Services.AddTransient<StatsSnapshotJob>();
 builder.Services.AddTransient<HottieOfTheDayJob>();
+builder.Services.AddTransient<ShirtlessOldManJob>();
 
 builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
 {
@@ -35,6 +37,14 @@ builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.DefaultRequestHeaders.Add("User-Agent", "MyDiscordBot - Market Analyzer Project");
+});
+
+builder.Services.AddHttpClient<IShirtlessOldManImageService, ShirtlessOldManImageService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.unsplash.com/");
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Add("Accept-Version", "v1");
 });
 
 
@@ -107,6 +117,11 @@ if (runRecurringJobs)
         job => job.ExecuteAsync(null, CancellationToken.None),
         Cron.Daily);
 
+    RecurringJob.AddOrUpdate<ShirtlessOldManJob>(
+        "shirtless-old-man",
+        job => job.ExecuteAsync(null, CancellationToken.None),
+        "0 10 * * *");
+
     BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
 }
 else
@@ -117,6 +132,7 @@ else
     RecurringJob.RemoveIfExists("sync-item-mappings");
     RecurringJob.RemoveIfExists("stats-snapshot");
     RecurringJob.RemoveIfExists("hottie-of-the-day");
+    RecurringJob.RemoveIfExists("shirtless-old-man");
 
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>
