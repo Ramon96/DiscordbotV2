@@ -43,7 +43,7 @@ builder.Services.AddHttpClient<IShirtlessOldManImageService, ShirtlessOldManImag
 {
     client.BaseAddress = new Uri("https://old.reddit.com/");
     client.Timeout = TimeSpan.FromSeconds(15);
-    client.DefaultRequestHeaders.Add("User-Agent", "DiscordBot:glados:v1.0.0 (by /u/Ramon96)");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "DiscordBot:glados:v1.0.0 (by /u/Ramon96)");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
