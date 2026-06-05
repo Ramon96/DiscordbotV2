@@ -20,11 +20,12 @@ jobs:
           HANGFIRE_PASSWORD: ${{ secrets.HANGFIRE_PASSWORD }}
           OPENCODE_APIKEY: ${{ secrets.OPENCODE_APIKEY }}
           GH_PAT: ${{ secrets.GH_PAT }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: POSTGRES_PASSWORD,DISCORD_TOKEN,DISCORD_GUILD_ID,DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID,HANGFIRE_USERNAME,HANGFIRE_PASSWORD,OPENCODE_APIKEY,GH_PAT
+          envs: POSTGRES_PASSWORD,DISCORD_TOKEN,DISCORD_GUILD_ID,DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID,HANGFIRE_USERNAME,HANGFIRE_PASSWORD,OPENCODE_APIKEY,GH_PAT,UNSPLASH_ACCESS_KEY
           port: 22
           script: |
             cd /root/DiscordbotV2
@@ -45,6 +46,7 @@ jobs:
             echo "GITHUB_TOKEN=$GH_PAT" >> .env
             echo "GITHUB_OWNER=ramon96" >> .env
             echo "GITHUB_REPO=DiscordbotV2" >> .env
+            echo "UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY" >> .env
 
             # Don't deploy if a feature is in progress
             if docker exec glados_scheduler pgrep -x opencode > /dev/null 2>&1; then
