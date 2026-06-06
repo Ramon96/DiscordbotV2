@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Discord;
 using Discord.WebSocket;
 using Glados.Discord.AI;
@@ -335,12 +336,37 @@ public class LookupCommand : IDiscordCommand
                      $"Player data:\n{sb}\n\n" +
                      "Keep it to 3-4 short sentences maximum. No fluff, no repetition. Just GLaDOS. Dry, playful, concise. Avoid filler words like 'In summary' or 'Continued observation' — just deliver the observation and stop.";
 
-        return await _aiService.SendAsync(
-            "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science. You observe OSRS players and comment on their progress with scientific detachment and dry humor. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find grinding virtual skills fascinating in a 'look what the humans do' way. You are NOT aggressive, cruel, or mean — you are playfully condescending in the way a scientist observes lab rats. Never break character. No emojis. No roleplay actions. Just talk like GLaDOS. Keep it brutally concise — 3 short sentences maximum. No filler. No wrap-up fluff like 'In summary' or 'Continued observation'. Do NOT output your reasoning or thinking process. Output ONLY the final observation.",
+        var response = await _aiService.SendAsync(
+            "You are GLaDOS, the Genetic Lifeform and Disk Operating System from Aperture Science. You observe OSRS players and comment on their progress with scientific detachment and dry humor. Your tone: clinical curiosity, mild sarcasm, weary amusement at human behavior. You find grinding virtual skills fascinating in a 'look what the humans do' way. You are NOT aggressive, cruel, or mean — you are playfully condescending in the way a scientist observes lab rats. Never break character. No emojis. No roleplay actions. Just talk like GLaDOS. Keep it brutally concise — 3 short sentences maximum. No filler. No wrap-up fluff like 'In summary' or 'Continued observation'. Wrap your final observation in <observation>...</observation> tags. Output ONLY the tagged observation — no reasoning, no analysis, no bullet points, no commentary outside the tags.",
             prompt,
             maxTokens: 500,
             temperature: 0.8,
             ct: ct);
+
+        if (string.IsNullOrWhiteSpace(response))
+            return null;
+
+        return ExtractTaggedContent(response, "observation") ?? response;
+    }
+
+    private static readonly Regex _extractTagPattern = new(
+        @"<\s*(\w+)\s*>(.*?)<\s*/\s*\1\s*>",
+        RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static string? ExtractTaggedContent(string content, string tag)
+    {
+        var match = _extractTagPattern.Match(content);
+        if (!match.Success)
+            return null;
+
+        var tagName = match.Groups[1].Value;
+        var innerContent = match.Groups[2].Value;
+
+        if (!string.Equals(tagName, tag, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var cleaned = AIService.StripThinkingTags(innerContent).Trim();
+        return string.IsNullOrWhiteSpace(cleaned) ? null : cleaned;
     }
 
     private static List<string> SplitMessage(string message, int maxLength)

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 
 namespace Glados.Discord.AI;
@@ -15,6 +16,19 @@ public class AIService
     };
 
     public string? LastError { get; private set; }
+
+    private static readonly Regex _thinkTagPattern = new(
+        @"<\s*(?:think|thinking)\s*>.*?<\s*/\s*(?:think|thinking)\s*>",
+        RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static string StripThinkingTags(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return content;
+
+        var cleaned = _thinkTagPattern.Replace(content, "");
+        return cleaned.Trim();
+    }
 
     public AIService(IConfiguration configuration)
     {
@@ -71,11 +85,16 @@ public class AIService
 
             var responseJson = await response.Content.ReadAsStringAsync(ct);
             using var doc = JsonDocument.Parse(responseJson);
-            var content = doc.RootElement
+            var message = doc.RootElement
                 .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
+                .GetProperty("message");
+
+            string? content = null;
+            if (message.TryGetProperty("content", out var contentProp))
+                content = contentProp.GetString();
+
+            if (!string.IsNullOrWhiteSpace(content))
+                content = StripThinkingTags(content);
 
             LastError = null;
             return content;
