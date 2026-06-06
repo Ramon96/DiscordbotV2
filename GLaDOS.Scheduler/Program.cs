@@ -44,6 +44,7 @@ builder.Services.AddHttpClient<IShirtlessOldManImageService, ShirtlessOldManImag
     client.BaseAddress = new Uri("https://api.flickr.com/");
     client.Timeout = TimeSpan.FromSeconds(15);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Add("User-Agent", "MyDiscordBot - GLaDOS Scheduler");
 });
 
 

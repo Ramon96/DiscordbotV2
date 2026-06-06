@@ -12,6 +12,9 @@ public class ShirtlessOldManImageService : IShirtlessOldManImageService
         ".jpg", ".jpeg", ".png", ".gif", ".webp"
     };
 
+    private static readonly HashSet<string> SeenUrls = new();
+    private static readonly object SeenLock = new();
+
     public ShirtlessOldManImageService(
         HttpClient httpClient,
         ILogger<ShirtlessOldManImageService> logger)
@@ -42,17 +45,30 @@ public class ShirtlessOldManImageService : IShirtlessOldManImageService
             var imageUrls = feed?.Items
                 ?.Where(i => !string.IsNullOrWhiteSpace(i?.Media?.M))
                 .Select(i => i!.Media!.M)
-                .Where(url => ImageExtensions.Contains(Path.GetExtension(new Uri(url).AbsolutePath)))
+                .Where(u => ImageExtensions.Contains(Path.GetExtension(new Uri(u).AbsolutePath)))
                 .ToList();
 
             if (imageUrls == null || imageUrls.Count == 0)
             {
-                _logger.LogError("Flickr API returned 200 but no image posts found");
+                _logger.LogWarning("Flickr returned 200 but no image posts found");
                 return new ShirtlessOldManImageResult(null, "No image posts found from Flickr search");
             }
 
-            var selected = imageUrls[Random.Shared.Next(imageUrls.Count)];
-            _logger.LogInformation("Got image URL from Flickr: {Url}", selected);
+            List<string> unseen;
+            lock (SeenLock)
+            {
+                unseen = imageUrls.Where(u => SeenUrls.Add(u)).ToList();
+                if (unseen.Count == 0)
+                {
+                    _logger.LogInformation("All {Count} images already seen, resetting cycle", imageUrls.Count);
+                    SeenUrls.Clear();
+                    foreach (var u in imageUrls) SeenUrls.Add(u);
+                    unseen = imageUrls;
+                }
+            }
+
+            var selected = unseen[Random.Shared.Next(unseen.Count)];
+            _logger.LogInformation("Selected image (unseen: {Unseen}/{Total}): {Url}", unseen.Count, imageUrls.Count, selected);
             return new ShirtlessOldManImageResult(selected, null);
         }
         catch (HttpRequestException ex)
