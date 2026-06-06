@@ -25,8 +25,8 @@ public class ShirtlessOldManImageService : IShirtlessOldManImageService
 
     public async Task<ShirtlessOldManImageResult> GetRandomImageUrlAsync(CancellationToken cancellationToken = default)
     {
-        var query = Uri.EscapeDataString("shirtless old man");
-        var url = $"/services/feeds/photos_public.gne?format=json&nojsoncallback=1&safe_search=0&per_page=100&tags={query}&tagmode=any";
+        var tags = "shirtless,old,man";
+        var url = $"/services/feeds/photos_public.gne?format=json&nojsoncallback=1&safe_search=0&per_page=100&tags={tags}&tagmode=any";
 
         try
         {
