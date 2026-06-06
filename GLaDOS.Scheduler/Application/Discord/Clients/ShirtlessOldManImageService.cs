@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace GLaDOS.Scheduler.Application.Discord.Clients;
@@ -40,17 +41,32 @@ public class ShirtlessOldManImageService : IShirtlessOldManImageService
                 return new ShirtlessOldManImageResult(null, $"Flickr API returned {(int)response.StatusCode} {response.ReasonPhrase}");
             }
 
-            var feed = await response.Content.ReadFromJsonAsync<FlickrFeed>(cancellationToken: cancellationToken);
+            var rawJson = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogInformation("Flickr response ({Length} bytes)", rawJson.Length);
 
-            var imageUrls = feed?.Items
-                ?.Where(i => !string.IsNullOrWhiteSpace(i?.Media?.M))
-                .Select(i => i!.Media!.M)
+            var feed = JsonSerializer.Deserialize<FlickrFeed>(rawJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var items = feed?.Items;
+            _logger.LogInformation("Flickr returned {ItemCount} items (feed null: {FeedNull})", items?.Count ?? -1, feed == null);
+
+            if (items == null || items.Count == 0)
+            {
+                _logger.LogWarning("Flickr returned 200 but feed had no items (feed null: {FeedNull})", feed == null);
+                return new ShirtlessOldManImageResult(null, "No image posts found from Flickr search");
+            }
+
+            var itemsWithMedia = items.Where(i => !string.IsNullOrWhiteSpace(i.Media?.M)).ToList();
+            _logger.LogInformation("Flickr items with media URLs: {Count}/{Total}", itemsWithMedia.Count, items.Count);
+
+            var imageUrls = itemsWithMedia
+                .Select(i => i.Media!.M)
                 .Where(u => ImageExtensions.Contains(Path.GetExtension(new Uri(u).AbsolutePath)))
                 .ToList();
 
-            if (imageUrls == null || imageUrls.Count == 0)
+            _logger.LogInformation("Flickr image URLs after extension filter: {Count}/{Total}", imageUrls.Count, itemsWithMedia.Count);
+
+            if (imageUrls.Count == 0)
             {
-                _logger.LogWarning("Flickr returned 200 but no image posts found");
+                _logger.LogWarning("No valid image URLs after filtering (media: {MediaCount}, total: {Total})", itemsWithMedia.Count, items.Count);
                 return new ShirtlessOldManImageResult(null, "No image posts found from Flickr search");
             }
 
