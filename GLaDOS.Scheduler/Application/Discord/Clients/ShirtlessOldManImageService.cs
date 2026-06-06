@@ -50,7 +50,7 @@ public class ShirtlessOldManImageService : IShirtlessOldManImageService
 
             if (items == null || items.Count == 0)
             {
-                _logger.LogWarning("Flickr returned 200 but feed had no items (feed null: {FeedNull})", feed == null);
+                _logger.LogWarning("Flickr returned 200 but feed had no items (feed null: {FeedNull}, body: {Body})", feed == null, rawJson);
                 return new ShirtlessOldManImageResult(null, "No image posts found from Flickr search");
             }
 
