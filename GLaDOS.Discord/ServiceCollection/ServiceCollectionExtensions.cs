@@ -30,7 +30,8 @@ public static class ServiceCollectionExtensions
             .AddSingleton<FeatureGuardService>()
             .AddHostedService<CommandHandlerService>()
             .AddHostedService<DiscordClient>()
-            .AddHostedService<SassyReplyService>();
+            .AddHostedService<SassyReplyService>()
+            .AddHostedService<DeathAdviceService>();
 
         var commandType = typeof(IDiscordCommand);
         var commandTypes = Assembly.GetExecutingAssembly().GetTypes()
