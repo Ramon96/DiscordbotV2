@@ -384,3 +384,299 @@ Time Elapsed 00:00:22.20
 [ ] Create PR
 [0m
 Build succeeded with 0 errors. Let me commit, push, and create the PR.
+[0m
+> build · deepseek-v4-flash-free
+[0m
+[0m# [0mTodos
+[•] Read existing code to understand patterns and conventions
+[ ] Create new git branch
+[ ] Create database entities and migration for OSRS fuckup tracking
+[ ] Create Discord commands (/osrsfuckup, /osrsfuckups, /osrscorrectfuckup)
+[ ] Build and verify compilation
+[ ] Commit, push, and create PR
+[0m
+[0m→ [0mRead .
+[0m• [0mExplore codebase structure[90m Explore Agent[0m
+[0m✓ [0mExplore codebase structure[90m Explore Agent[0m
+[0m→ [0mRead GLaDOS.Discord/Commands/ConnectOsrsUser.cs
+[0m→ [0mRead GLaDOS.Discord/Commands/LookupCommand.cs
+[0m→ [0mRead GLaDOS.Core/Domain/Entity.cs
+[0m→ [0mRead GLaDOS.Core/Domain/Discord/HottieOfTheDay.cs
+[0m→ [0mRead GLaDOS.Infra/EntityFramework/Configurations/EntityConfig.cs
+Let me read the existing command files to understand the exact code patterns.
+[0m→ [0mRead GLaDOS.Infra/EntityFramework/Configurations/Discord/HottieOfTheDayConfig.cs
+[0m→ [0mRead GLaDOS.Infra/EntityFramework/ApplicationDbContext.cs
+[0m→ [0mRead GLaDOS.Discord/Commands/FeatureCommand.cs
+[0m→ [0mRead GLaDOS.Infra/GLaDOS.Infra.csproj
+[0m→ [0mRead GLaDOS.Core/GLaDOS.Core.csproj
+[0m→ [0mRead GLaDOS.Core/Domain/Discord
+Now I have a thorough understanding. Let me check the infra project setup for migration support.
+[0m
+[0m$ [0mdotnet ef --version 2>&1 || echo "NOT AVAILABLE"
+Could not execute because the specified command or file was not found.
+Possible reasons for this include:
+  * You misspelled a built-in dotnet command.
+  * You intended to execute a .NET program, but dotnet-ef does not exist.
+  * You intended to run a global tool, but a dotnet-prefixed executable with this name could not be found on the PATH.
+NOT AVAILABLE
+[0m
+[0m→ [0mRead GLaDOS.Infra/Migrations/20260604194416_AddHottieOfTheDay.cs
+[0m→ [0mRead GLaDOS.Infra/Migrations/20260604194416_AddHottieOfTheDay.Designer.cs
+[0m
+[0m# [0mTodos
+[✓] Read existing code to understand patterns and conventions
+[ ] Create new git branch
+[•] Create database entities and migration for OSRS fuckup tracking
+[ ] Create Discord commands (/osrsfuckup, /osrsfuckups, /osrscorrectfuckup)
+[ ] Build and verify compilation
+[ ] Commit, push, and create PR
+[0m
+[0m$ [0mdotnet tool install --global dotnet-ef 2>&1
+Tools directory '/root/.dotnet/tools' is not currently on the PATH environment variable.
+If you are using bash, you can add it to your profile by running the following command:
+
+cat << \EOF >> ~/.bash_profile
+# Add .NET Core SDK tools
+export PATH="$PATH:/root/.dotnet/tools"
+EOF
+
+You can add it to the current session by running the following command:
+
+export PATH="$PATH:/root/.dotnet/tools"
+
+You can invoke the tool using the following command: dotnet-ef
+Tool 'dotnet-ef' (version '10.0.9') was successfully installed.
+[0m
+[0m$ [0mexport PATH="$PATH:/root/.dotnet/tools" && export PATH="$PATH:/root/.dotnet/tools"
+(no output)
+[0m
+[0m← [0mWrite GLaDOS.Core/Domain/Discord/OsrsFuckup.cs
+Wrote file successfully.
+[0m
+[0m← [0mWrite GLaDOS.Infra/EntityFramework/Configurations/Discord/OsrsFuckupConfig.cs
+Wrote file successfully.
+[0m
+[0m← [0mEdit GLaDOS.Infra/EntityFramework/ApplicationDbContext.cs
+Index: /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/EntityFramework/ApplicationDbContext.cs
+===================================================================
+--- /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/EntityFramework/ApplicationDbContext.cs
++++ /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/EntityFramework/ApplicationDbContext.cs
+@@ -21,8 +21,9 @@
+ public DbSet<OsrsPriceSnapshot> OsrsPriceSnapshots { get; set; }
+ public DbSet<OldschoolRunescapeStatsSnapshot> OldschoolRunescapeStatsSnapshots { get; set; }
+ public DbSet<OldschoolRunescapeActivitySnapshot> OldschoolRunescapeActivitySnapshots { get; set; }
+ public DbSet<OldschoolRunescapeLookup> OldschoolRunescapeLookups { get; set; }
++public DbSet<OsrsFuckup> OsrsFuckups { get; set; }
+ 
+ protected override void OnModelCreating(ModelBuilder builder)
+ {
+     base.OnModelCreating(builder);
+
+[0m
+[0m→ [0mRead GLaDOS.Infra/EntityFramework/ApplicationDbContext.cs
+Now let me create the migration:
+[0m
+[0m$ [0mexport PATH="$PATH:/root/.dotnet/tools" && dotnet ef migrations add AddOsrsFuckup --project GLaDOS.Infra 2>&1
+/usr/share/dotnet/sdk/10.0.101/Sdks/Microsoft.NET.Sdk/targets/Microsoft.PackageDependencyResolution.targets(266,5): error NETSDK1004: Assets file '/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/obj/project.assets.json' not found. Run a NuGet package restore to generate this file. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj]
+Unable to retrieve project metadata. Ensure it's an SDK-style project.
+[0m
+[0m$ [0mdotnet restore GLaDOS.sln 2>&1
+Determining projects to restore...
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj : warning NU1510: PackageReference Microsoft.Extensions.Hosting.Abstractions will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+  Restored /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj (in 673 ms).
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+  Restored /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj (in 74 ms).
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+  Restored /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj (in 21 ms).
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+  Restored /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj (in 32 ms).
+  Restored /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj (in 11 ms).
+  Restored /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Core/GLaDOS.Core.csproj (in 28 ms).
+[0m
+[0m$ [0mdotnet ef migrations add AddOsrsFuckup --project GLaDOS.Infra 2>&1
+Could not execute because the specified command or file was not found.
+Possible reasons for this include:
+  * You misspelled a built-in dotnet command.
+  * You intended to execute a .NET program, but dotnet-ef does not exist.
+  * You intended to run a global tool, but a dotnet-prefixed executable with this name could not be found on the PATH.
+[0m
+[0m$ [0m/root/.dotnet/tools/dotnet-ef migrations add AddOsrsFuckup --project GLaDOS.Infra 2>&1
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf
+Build started...
+Build succeeded.
+Unable to create a 'DbContext' of type 'ApplicationDbContext'. The exception 'Unable to resolve service for type 'Microsoft.EntityFrameworkCore.DbContextOptions`1[GLaDOS.Infra.EntityFramework.ApplicationDbContext]' while attempting to activate 'GLaDOS.Infra.EntityFramework.ApplicationDbContext'.' was thrown while attempting to create an instance. For the different patterns supported at design time, see https://go.microsoft.com/fwlink/?linkid=851728
+[0m
+[0m✱ [0mGlob "**/DesignTimeDbContextFactory*"[90m in . · 0 matches[0m
+[0m→ [0mRead GLaDOS.Scheduler/Program.cs
+[0m✱ [0mGlob "**/appsettings*.json"[90m in . · 1 match[0m
+[0m→ [0mRead GLaDOS.Scheduler/appsettings.json
+[0m✱ [0mGlob "**/appsettings*"[90m in . · 1 match[0m
+[0m
+[0m$ [0menv | grep -i connect 2>&1; env | grep -i postgres 2>&1; env | grep -i npgsql 2>&1; env | grep -i database 2>&1; env | grep DB_ 2>&1
+ConnectionStrings__DefaultConnection=Host=postgres;Database=glados_db;Username=postgres;Password=MySuperSecretPassword
+ConnectionStrings__DefaultConnection=Host=postgres;Database=glados_db;Username=postgres;Password=MySuperSecretPassword
+ConnectionStrings__DefaultConnection=Host=postgres;Database=glados_db;Username=postgres;Password=MySuperSecretPassword
+[0m
+[0m← [0mWrite GLaDOS.Infra/EntityFramework/ApplicationDbContextFactory.cs
+Wrote file successfully.
+[0m
+[0m$ [0m/root/.dotnet/tools/dotnet-ef migrations add AddOsrsFuckup --project GLaDOS.Infra 2>&1
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf
+Build started...
+Build succeeded.
+Done. To undo this action, use 'ef migrations remove'
+[0m
+[0m# [0mTodos
+[✓] Read existing code to understand patterns and conventions
+[ ] Create new git branch
+[✓] Create database entities and migration for OSRS fuckup tracking
+[•] Create Discord commands (/osrsfuckup, /osrsfuckups, /osrscorrectfuckup)
+[ ] Build and verify compilation
+[ ] Commit, push, and create PR
+[0m
+[0m← [0mWrite GLaDOS.Discord/Commands/OsrsFuckupCommand.cs
+Wrote file successfully.
+[0m
+[0m← [0mWrite GLaDOS.Discord/Commands/OsrsFuckupsCommand.cs
+Wrote file successfully.
+[0m
+[0m← [0mWrite GLaDOS.Discord/Commands/OsrsCorrectFuckupCommand.cs
+Wrote file successfully.
+[0m
+Now let me create the three command files:
+[0m# [0mTodos
+[✓] Read existing code to understand patterns and conventions
+[•] Create new git branch
+[✓] Create database entities and migration for OSRS fuckup tracking
+[✓] Create Discord commands (/osrsfuckup, /osrsfuckups, /osrscorrectfuckup)
+[ ] Build and verify compilation
+[ ] Commit, push, and create PR
+[0m
+[0m$ [0mgit checkout -b feature/osrs-fuckup-counter 2>&1
+Switched to a new branch 'feature/osrs-fuckup-counter'
+[0m
+[0m# [0mTodos
+[✓] Read existing code to understand patterns and conventions
+[✓] Create new git branch
+[✓] Create database entities and migration for OSRS fuckup tracking
+[✓] Create Discord commands (/osrsfuckup, /osrsfuckups, /osrscorrectfuckup)
+[•] Build and verify compilation
+[ ] Commit, push, and create PR
+[0m
+[0m$ [0mdotnet build GLaDOS.sln 2>&1
+Determining projects to restore...
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj : warning NU1510: PackageReference Microsoft.Extensions.Hosting.Abstractions will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+  All projects are up-to-date for restore.
+  GLaDOS.Core -> /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Core/bin/Debug/net10.0/GLaDOS.Core.dll
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj : warning NU1510: PackageReference Microsoft.Extensions.Hosting.Abstractions will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/Repositories/Repository.cs(23,32): warning CS8613: Nullability of reference types in return type of 'Task<TEntity> Repository<TEntity>.GetByIdAsync(Guid id, CancellationToken cancellationToken = default(CancellationToken))' doesn't match implicitly implemented member 'Task<TEntity?> IRepository<TEntity>.GetByIdAsync(Guid id, CancellationToken cancellationToken = default(CancellationToken))'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj]
+  GLaDOS.Infra -> /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/bin/Debug/net10.0/GLaDOS.Infra.dll
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(42,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(24,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(9,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(12,57): warning CS8618: Non-nullable property 'Skills' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(15,60): warning CS8618: Non-nullable property 'Activities' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+  GLaDOS.OldschoolRunescape -> /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/bin/Debug/net10.0/GLaDOS.OldschoolRunescape.dll
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/Clients/OsrsWikiItemClient.cs(33,20): warning CS8766: Nullability of reference types in return type of 'string? OsrsWikiItemClient.GetImageUrl(string wikiFileName)' doesn't match implicitly implemented member 'string IOsrsWikiItemClient.GetImageUrl(string wikiFileName)' (possibly because of nullability attributes). [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj]
+  GLaDOS.OsrsWiki -> /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/bin/Debug/net10.0/GLaDOS.OsrsWiki.dll
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/ConnectOsrsUser.cs(42,26): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/ConnectOsrsUser.cs(43,28): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/ConnectOsrsUser.cs(81,29): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/NameChangeOsrsUser.cs(40,35): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/NameChangeOsrsUser.cs(41,35): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+  GLaDOS.Discord -> /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/bin/Debug/net10.0/GLaDOS.Discord.dll
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Swagger/SwaggerBasicAuthMiddleware.cs(22,33): warning CS8600: Converting null literal or possible null value to non-nullable type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Swagger/SwaggerBasicAuthMiddleware.cs(30,83): warning CS8604: Possible null reference argument for parameter 's' in 'byte[] Convert.FromBase64String(string s)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Hangfire/HangfireAuthorizationFilter.cs(20,25): warning CS8600: Converting null literal or possible null value to non-nullable type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Hangfire/HangfireAuthorizationFilter.cs(38,78): warning CS8604: Possible null reference argument for parameter 's' in 'byte[] Convert.FromBase64String(string s)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(77,17): warning CS8604: Possible null reference argument for parameter 'user' in 'HangfireAuthorizationFilter.HangfireAuthorizationFilter(string user, string pass)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(78,17): warning CS8604: Possible null reference argument for parameter 'pass' in 'HangfireAuthorizationFilter.HangfireAuthorizationFilter(string user, string pass)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(92,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(97,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(102,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(107,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(112,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(117,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(122,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(125,71): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(140,80): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(147,85): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(154,89): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(161,88): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+  GLaDOS.Scheduler -> /tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/bin/Debug/net10.0/GLaDOS.Scheduler.dll
+
+Build succeeded.
+
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj : warning NU1510: PackageReference Microsoft.Extensions.Hosting.Abstractions will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.sln]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj : warning NU1510: PackageReference Microsoft.Extensions.Hosting.Abstractions will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/Repositories/Repository.cs(23,32): warning CS8613: Nullability of reference types in return type of 'Task<TEntity> Repository<TEntity>.GetByIdAsync(Guid id, CancellationToken cancellationToken = default(CancellationToken))' doesn't match implicitly implemented member 'Task<TEntity?> IRepository<TEntity>.GetByIdAsync(Guid id, CancellationToken cancellationToken = default(CancellationToken))'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Infra/GLaDOS.Infra.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(42,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(24,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(9,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(12,57): warning CS8618: Non-nullable property 'Skills' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/Responses/OldschoolRunescapeHiscoreResponse.cs(15,60): warning CS8618: Non-nullable property 'Activities' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OldschoolRunescape/GLaDOS.OldschoolRunescape.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj : warning NU1903: Package 'Newtonsoft.Json' 11.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/Clients/OsrsWikiItemClient.cs(33,20): warning CS8766: Nullability of reference types in return type of 'string? OsrsWikiItemClient.GetImageUrl(string wikiFileName)' doesn't match implicitly implemented member 'string IOsrsWikiItemClient.GetImageUrl(string wikiFileName)' (possibly because of nullability attributes). [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.OsrsWiki/GLaDOS.OsrsWiki.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/ConnectOsrsUser.cs(42,26): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/ConnectOsrsUser.cs(43,28): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/ConnectOsrsUser.cs(81,29): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/NameChangeOsrsUser.cs(40,35): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/Commands/NameChangeOsrsUser.cs(41,35): warning CS8602: Dereference of a possibly null reference. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Discord/GLaDOS.Discord.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Swagger/SwaggerBasicAuthMiddleware.cs(22,33): warning CS8600: Converting null literal or possible null value to non-nullable type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Swagger/SwaggerBasicAuthMiddleware.cs(30,83): warning CS8604: Possible null reference argument for parameter 's' in 'byte[] Convert.FromBase64String(string s)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Hangfire/HangfireAuthorizationFilter.cs(20,25): warning CS8600: Converting null literal or possible null value to non-nullable type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Application/Hangfire/HangfireAuthorizationFilter.cs(38,78): warning CS8604: Possible null reference argument for parameter 's' in 'byte[] Convert.FromBase64String(string s)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(77,17): warning CS8604: Possible null reference argument for parameter 'user' in 'HangfireAuthorizationFilter.HangfireAuthorizationFilter(string user, string pass)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(78,17): warning CS8604: Possible null reference argument for parameter 'pass' in 'HangfireAuthorizationFilter.HangfireAuthorizationFilter(string user, string pass)'. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(92,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(97,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(102,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(107,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(112,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(117,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(122,33): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(125,71): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(140,80): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(147,85): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(154,89): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/Program.cs(161,88): warning CS8625: Cannot convert null literal to non-nullable reference type. [/tmp/feature-0241c6b7e5a34c3a98f801192f5399b2/GLaDOS.Scheduler/GLaDOS.Scheduler.csproj]
+    40 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.51
+[0m
+[0m# [0mTodos
+[✓] Read existing code to understand patterns and conventions
+[✓] Create new git branch
+[✓] Create database entities and migration for OSRS fuckup tracking
+[✓] Create Discord commands (/osrsfuckup, /osrsfuckups, /osrscorrectfuckup)
+[✓] Build and verify compilation
+[•] Commit, push, and create PR
+[0m
+[0m$ [0mgit remote -v 2>&1
+origin	https://github.com/ramon96/DiscordbotV2.git (fetch)
+origin	https://github.com/ramon96/DiscordbotV2.git (push)
+[0m
+Build succeeded with 0 errors. Now let me commit and push.

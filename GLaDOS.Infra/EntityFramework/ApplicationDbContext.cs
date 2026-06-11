@@ -22,6 +22,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<OldschoolRunescapeStatsSnapshot> OldschoolRunescapeStatsSnapshots { get; set; }
     public DbSet<OldschoolRunescapeActivitySnapshot> OldschoolRunescapeActivitySnapshots { get; set; }
     public DbSet<OldschoolRunescapeLookup> OldschoolRunescapeLookups { get; set; }
+    public DbSet<OsrsFuckup> OsrsFuckups { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
