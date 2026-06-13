@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     {
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.MessageContent
+            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.MessageContent
         };
 
         var collection = services

@@ -45,9 +45,15 @@ public class DeathAdviceService : IHostedService
         if (!message.Attachments.Any(a => a.ContentType?.StartsWith("image/") == true))
             return;
 
-        if (Random.Shared.Next(3) != 0)
-            return;
+        Console.WriteLine($"[DeathAdvice] Webhook message with image detected: {message.Id} in channel {message.Channel.Id}");
 
+        if (Random.Shared.Next(3) != 0)
+        {
+            Console.WriteLine($"[DeathAdvice] Skipped by random roll (2/3 chance)");
+            return;
+        }
+
+        Console.WriteLine($"[DeathAdvice] Calling AI for reply...");
         var reply = await _ai.SendAsync(
             SystemPrompt,
             "Generate a short, sarcastic, useless piece of advice for someone who just died:",
@@ -57,11 +63,16 @@ public class DeathAdviceService : IHostedService
             ct: CancellationToken.None);
 
         if (string.IsNullOrWhiteSpace(reply))
+        {
+            Console.WriteLine($"[DeathAdvice] AI returned null/empty (LastError: {_ai.LastError})");
             return;
+        }
 
+        Console.WriteLine($"[DeathAdvice] AI replied: \"{reply[..Math.Min(reply.Length, 100)]}\"");
         try
         {
             await message.Channel.SendMessageAsync(reply);
+            Console.WriteLine($"[DeathAdvice] Reply sent successfully");
         }
         catch (Exception ex)
         {
