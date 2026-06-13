@@ -37,12 +37,22 @@ public class DeathAdviceService : IHostedService
         return Task.CompletedTask;
     }
 
+    private static readonly string[] DeathKeywords =
+    [
+        "died", "death", "dead", "you died", "you've died", "you have died",
+        "you are dead", "you were killed", "was killed", "rip", "f"
+    ];
+
     private async Task OnMessageReceived(SocketMessage message)
     {
         if (!message.Author.IsWebhook)
             return;
 
         if (!message.Attachments.Any(a => a.ContentType?.StartsWith("image/") == true))
+            return;
+
+        var content = message.Content?.ToLowerInvariant() ?? "";
+        if (!DeathKeywords.Any(kw => content.Contains(kw)))
             return;
 
         Console.WriteLine($"[DeathAdvice] Webhook message with image detected: {message.Id} in channel {message.Channel.Id}");
