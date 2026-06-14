@@ -93,9 +93,6 @@ public class AIService
             if (message.TryGetProperty("content", out var contentProp))
                 content = contentProp.GetString();
 
-            if (string.IsNullOrWhiteSpace(content) && message.TryGetProperty("reasoning_content", out var reasoningProp))
-                content = reasoningProp.GetString();
-
             if (!string.IsNullOrWhiteSpace(content))
                 content = StripThinkingTags(content);
 

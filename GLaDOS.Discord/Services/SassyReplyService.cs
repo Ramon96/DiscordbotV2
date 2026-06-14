@@ -43,7 +43,7 @@ public class SassyReplyService : IHostedService
         var reply = await _ai.SendAsync(
             SystemPrompt,
             $"User said: \"{message.Content}\"\n\nRespond with a sassy GLaDOS reply:",
-            model: "deepseek-v4-flash-free",
+            model: "nemotron-3-ultra-free",
             maxTokens: 150,
             temperature: 0.9,
             ct: CancellationToken.None);
