@@ -17,6 +17,7 @@ public class AloneVoiceService : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
+        Console.WriteLine("[AloneVoice] Service starting, subscribing to voice state events...");
         _client.UserVoiceStateUpdated += OnUserVoiceStateUpdated;
         return Task.CompletedTask;
     }
@@ -29,6 +30,8 @@ public class AloneVoiceService : IHostedService
 
     private async Task OnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
     {
+        Console.WriteLine($"[AloneVoice] Voice state event: user={user.Username}, isBot={user.IsBot}, oldChannel={oldState.VoiceChannel?.Name}, newChannel={newState.VoiceChannel?.Name}");
+
         if (user.IsBot)
             return;
 
