@@ -56,12 +56,19 @@ public class AloneVoiceService : IHostedService
 
     private async Task EvaluateVoiceChannels()
     {
+        Console.WriteLine("[AloneVoice] EvaluateVoiceChannels called");
+
         SocketVoiceChannel? botChannel = null;
 
         foreach (var guild in _client.Guilds)
         {
+            Console.WriteLine($"[AloneVoice]   Checking guild: {guild.Name} ({guild.Id}), voice channels: {guild.VoiceChannels.Count}");
+
             foreach (var vc in guild.VoiceChannels)
             {
+                var users = vc.Users.ToList();
+                Console.WriteLine($"[AloneVoice]     Channel: {vc.Name} ({vc.Id}), users: {users.Count} — {string.Join(", ", users.Select(u => u.Username))}");
+
                 if (vc.Users.Any(u => u.Id == _client.CurrentUser.Id))
                 {
                     botChannel = vc;
@@ -74,6 +81,7 @@ public class AloneVoiceService : IHostedService
         if (botChannel != null)
         {
             var humanCount = botChannel.Users.Count(u => !u.IsBot);
+            Console.WriteLine($"[AloneVoice] Bot is in {botChannel.Name}, human users: {humanCount}");
 
             if (humanCount == 0)
             {
@@ -92,11 +100,14 @@ public class AloneVoiceService : IHostedService
             return;
         }
 
+        Console.WriteLine("[AloneVoice] Bot is not in any voice channel, searching for alone users...");
+
         foreach (var guild in _client.Guilds)
         {
             foreach (var vc in guild.VoiceChannels)
             {
                 var humanUsers = vc.Users.Where(u => !u.IsBot).ToList();
+                Console.WriteLine($"[AloneVoice]   {guild.Name}/{vc.Name}: {humanUsers.Count} human users");
                 if (humanUsers.Count == 1)
                 {
                     Console.WriteLine($"[AloneVoice] {humanUsers[0].Username} is alone in {vc.Name}, joining");
@@ -105,13 +116,17 @@ public class AloneVoiceService : IHostedService
                 }
             }
         }
+
+        Console.WriteLine("[AloneVoice] No alone users found");
     }
 
     private async Task JoinVoice(SocketVoiceChannel channel)
     {
         try
         {
+            Console.WriteLine($"[AloneVoice] Calling ConnectAsync on {channel.Name}...");
             _audioClient = await channel.ConnectAsync();
+            Console.WriteLine($"[AloneVoice] Successfully connected to {channel.Name}");
         }
         catch (Exception ex)
         {
