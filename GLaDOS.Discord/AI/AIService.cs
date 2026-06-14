@@ -38,7 +38,7 @@ public class AIService
     public async Task<string?> SendAsync(
         string systemPrompt,
         string userPrompt,
-        string model = "nemotron-3-super-free",
+        string model = "nemotron-3-ultra-free",
         int maxTokens = 2000,
         double temperature = 0.7,
         CancellationToken ct = default)

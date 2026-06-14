@@ -49,6 +49,12 @@ public class DeathAdviceService : IHostedService
 
         Console.WriteLine($"[DeathAdvice] Webhook message with image detected: {message.Id} in channel {message.Channel.Id}");
 
+        if (Random.Shared.Next(3) != 0)
+        {
+            Console.WriteLine($"[DeathAdvice] Skipped by random roll (2/3 chance)");
+            return;
+        }
+
         Console.WriteLine($"[DeathAdvice] Calling AI for reply...");
         var reply = await _ai.SendAsync(
             SystemPrompt,
