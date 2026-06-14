@@ -37,9 +37,9 @@ public class SassyReplyService : IHostedService
         if (message.Author.IsBot || message.Author.IsWebhook)
             return;
 
-        // if (Random.Shared.Next(100) != 0)  return; // TODO: uncomment for 1% chance
+        if (Random.Shared.Next(20) != 0)
+            return;
 
-        Console.WriteLine($"[Sassy] Message from {message.Author.Username}: \"{message.Content[..Math.Min(message.Content.Length, 100)]}\"");
         var reply = await _ai.SendAsync(
             SystemPrompt,
             $"User said: \"{message.Content}\"\n\nRespond with a sassy GLaDOS reply:",
