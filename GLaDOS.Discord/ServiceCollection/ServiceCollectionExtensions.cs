@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     {
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.MessageContent
+            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.MessageContent | GatewayIntents.GuildVoiceStates
         };
 
         var collection = services
@@ -31,7 +31,8 @@ public static class ServiceCollectionExtensions
             .AddHostedService<CommandHandlerService>()
             .AddHostedService<DiscordClient>()
             .AddHostedService<SassyReplyService>()
-            .AddHostedService<DeathAdviceService>();
+            .AddHostedService<DeathAdviceService>()
+            .AddHostedService<AloneVoiceService>();
 
         var commandType = typeof(IDiscordCommand);
         var commandTypes = Assembly.GetExecutingAssembly().GetTypes()
