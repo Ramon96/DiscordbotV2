@@ -60,7 +60,8 @@ public class AIService
                 new { role = "user", content = userPrompt }
             },
             max_tokens = maxTokens,
-            temperature
+            temperature,
+            thinking = new { type = "disabled" }
         };
 
         var json = JsonSerializer.Serialize(requestBody);

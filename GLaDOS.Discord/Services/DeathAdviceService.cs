@@ -53,7 +53,7 @@ public class DeathAdviceService : IHostedService
         var reply = await _ai.SendAsync(
             SystemPrompt,
             "Generate a short, sarcastic, useless piece of advice for someone who just died:",
-            model: "nemotron-3-ultra-free",
+            model: "deepseek-v4-flash-free",
             maxTokens: 150,
             temperature: 0.9,
             ct: CancellationToken.None);
