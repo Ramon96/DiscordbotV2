@@ -93,11 +93,8 @@ public class AIService
             if (message.TryGetProperty("content", out var contentProp))
                 content = contentProp.GetString();
 
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                var rawPreview = responseJson[..Math.Min(responseJson.Length, 500)];
-                Console.WriteLine($"[AI] Empty content — raw response: {rawPreview}");
-            }
+            if (string.IsNullOrWhiteSpace(content) && message.TryGetProperty("reasoning_content", out var reasoningProp))
+                content = reasoningProp.GetString();
 
             if (!string.IsNullOrWhiteSpace(content))
                 content = StripThinkingTags(content);
