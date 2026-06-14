@@ -8,6 +8,7 @@ public class AloneVoiceService : IHostedService
 {
     private readonly DiscordSocketClient _client;
     private IAudioClient? _audioClient;
+    private readonly SemaphoreSlim _evalLock = new(1, 1);
 
     public AloneVoiceService(DiscordSocketClient client)
     {
@@ -28,10 +29,13 @@ public class AloneVoiceService : IHostedService
 
     private async Task OnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
     {
-        if (user.IsBot && user.Id != _client.CurrentUser.Id)
+        if (user.IsBot)
             return;
 
         await Task.Delay(1500);
+
+        if (!await _evalLock.WaitAsync(0))
+            return;
 
         try
         {
@@ -40,6 +44,10 @@ public class AloneVoiceService : IHostedService
         catch (Exception ex)
         {
             Console.WriteLine($"[AloneVoice] Error: {ex.Message}");
+        }
+        finally
+        {
+            _evalLock.Release();
         }
     }
 
