@@ -39,6 +39,7 @@ public class SassyReplyService : IHostedService
 
         // if (Random.Shared.Next(100) != 0)  return; // TODO: uncomment for 1% chance
 
+        Console.WriteLine($"[Sassy] Message from {message.Author.Username}: \"{message.Content[..Math.Min(message.Content.Length, 100)]}\"");
         var reply = await _ai.SendAsync(
             SystemPrompt,
             $"User said: \"{message.Content}\"\n\nRespond with a sassy GLaDOS reply:",
@@ -48,7 +49,10 @@ public class SassyReplyService : IHostedService
             ct: CancellationToken.None);
 
         if (string.IsNullOrWhiteSpace(reply))
+        {
+            Console.WriteLine($"[Sassy] AI returned null/empty (LastError: {_ai.LastError})");
             return;
+        }
 
         try
         {
