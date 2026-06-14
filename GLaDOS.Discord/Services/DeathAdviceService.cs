@@ -37,9 +37,11 @@ public class DeathAdviceService : IHostedService
         return Task.CompletedTask;
     }
 
+    private static readonly ulong DeathWebhookId = 1164299879904981012;
+
     private async Task OnMessageReceived(SocketMessage message)
     {
-        if (!message.Author.IsWebhook)
+        if (message.Author.Id != DeathWebhookId)
             return;
 
         if (!message.Attachments.Any(a => a.ContentType?.StartsWith("image/") == true))
