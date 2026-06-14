@@ -37,8 +37,7 @@ public class SassyReplyService : IHostedService
         if (message.Author.IsBot || message.Author.IsWebhook)
             return;
 
-        if (Random.Shared.Next(100) != 0)
-            return;
+        // if (Random.Shared.Next(100) != 0)  return; // TODO: uncomment for 1% chance
 
         var reply = await _ai.SendAsync(
             SystemPrompt,
