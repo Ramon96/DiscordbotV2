@@ -9,6 +9,7 @@ public class AloneVoiceService : IHostedService
     private readonly DiscordSocketClient _client;
     private IAudioClient? _audioClient;
     private readonly SemaphoreSlim _evalLock = new(1, 1);
+    private bool _startupComplete;
 
     public AloneVoiceService(DiscordSocketClient client)
     {
@@ -19,7 +20,43 @@ public class AloneVoiceService : IHostedService
     {
         Console.WriteLine("[AloneVoice] Service starting, subscribing to voice state events...");
         _client.UserVoiceStateUpdated += OnUserVoiceStateUpdated;
+        _ = DelayedStartupAsync();
         return Task.CompletedTask;
+    }
+
+    private async Task DelayedStartupAsync()
+    {
+        await Task.Delay(5000);
+
+        if (await _evalLock.WaitAsync(0))
+        {
+            try
+            {
+                var botChannel = FindBotChannel();
+
+                if (botChannel == null)
+                {
+                    foreach (var guild in _client.Guilds)
+                    foreach (var vc in guild.VoiceChannels)
+                    {
+                        var humans = vc.Users.Where(u => !u.IsBot).ToList();
+                        if (humans.Count == 1)
+                        {
+                            Console.WriteLine($"[AloneVoice] Found {humans[0].Username} alone in {vc.Name} after startup, joining");
+                            await JoinVoice(vc);
+                            break;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _evalLock.Release();
+            }
+        }
+
+        _startupComplete = true;
+        Console.WriteLine("[AloneVoice] Startup complete, now processing live events");
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -32,7 +69,7 @@ public class AloneVoiceService : IHostedService
     {
         Console.WriteLine($"[AloneVoice] Voice state event: user={user.Username}, isBot={user.IsBot}, oldChannel={oldState.VoiceChannel?.Name}, newChannel={newState.VoiceChannel?.Name}");
 
-        if (user.IsBot)
+        if (user.IsBot || !_startupComplete)
             return;
 
         await Task.Delay(1500);
@@ -56,6 +93,9 @@ public class AloneVoiceService : IHostedService
 
     private SocketVoiceChannel? FindBotChannel()
     {
+        if (_audioClient == null)
+            return null;
+
         foreach (var guild in _client.Guilds)
         foreach (var vc in guild.VoiceChannels)
             if (vc.Users.Any(u => u.Id == _client.CurrentUser.Id))
