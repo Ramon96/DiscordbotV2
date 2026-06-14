@@ -42,7 +42,7 @@ public class AloneVoiceService : IHostedService
 
         try
         {
-            await EvaluateVoiceChannels();
+            await EvaluateVoiceChannels(user, oldState.VoiceChannel, newState.VoiceChannel);
         }
         catch (Exception ex)
         {
@@ -54,70 +54,53 @@ public class AloneVoiceService : IHostedService
         }
     }
 
-    private async Task EvaluateVoiceChannels()
+    private SocketVoiceChannel? FindBotChannel()
     {
-        Console.WriteLine("[AloneVoice] EvaluateVoiceChannels called");
-
-        SocketVoiceChannel? botChannel = null;
-
         foreach (var guild in _client.Guilds)
+        foreach (var vc in guild.VoiceChannels)
+            if (vc.Users.Any(u => u.Id == _client.CurrentUser.Id))
+                return vc;
+        return null;
+    }
+
+    private async Task EvaluateVoiceChannels(SocketUser user, SocketVoiceChannel? leftChannel, SocketVoiceChannel? joinedChannel)
+    {
+        var botChannel = FindBotChannel();
+
+        // User left a channel where the bot is — check if bot is now alone
+        if (leftChannel != null && botChannel?.Id == leftChannel.Id)
         {
-            Console.WriteLine($"[AloneVoice]   Checking guild: {guild.Name} ({guild.Id}), voice channels: {guild.VoiceChannels.Count}");
-
-            foreach (var vc in guild.VoiceChannels)
+            var humanCount = leftChannel.Users.Count(u => !u.IsBot);
+            if (humanCount <= 1)
             {
-                var users = vc.Users.ToList();
-                Console.WriteLine($"[AloneVoice]     Channel: {vc.Name} ({vc.Id}), users: {users.Count} — {string.Join(", ", users.Select(u => u.Username))}");
+                Console.WriteLine($"[AloneVoice] User left {leftChannel.Name}, leaving");
+                await LeaveVoice();
+                botChannel = null;
+            }
+        }
 
-                if (vc.Users.Any(u => u.Id == _client.CurrentUser.Id))
+        // User joined a channel
+        if (joinedChannel != null)
+        {
+            var humanUsers = joinedChannel.Users.Where(u => !u.IsBot).ToList();
+
+            if (humanUsers.Count == 1)
+            {
+                if (botChannel == null || botChannel.Id != joinedChannel.Id)
                 {
-                    botChannel = vc;
-                    break;
+                    if (botChannel != null)
+                        await LeaveVoice();
+
+                    Console.WriteLine($"[AloneVoice] {humanUsers[0].Username} is alone in {joinedChannel.Name}, joining");
+                    await JoinVoice(joinedChannel);
                 }
             }
-            if (botChannel != null) break;
-        }
-
-        if (botChannel != null)
-        {
-            var humanCount = botChannel.Users.Count(u => !u.IsBot);
-            Console.WriteLine($"[AloneVoice] Bot is in {botChannel.Name}, human users: {humanCount}");
-
-            if (humanCount == 0)
+            else if (humanUsers.Count >= 2 && botChannel?.Id == joinedChannel.Id)
             {
-                Console.WriteLine($"[AloneVoice] No one left in {botChannel.Name}, leaving");
+                Console.WriteLine($"[AloneVoice] {humanUsers.Count} users in {botChannel.Name}, leaving");
                 await LeaveVoice();
-                return;
-            }
-
-            if (humanCount >= 2)
-            {
-                Console.WriteLine($"[AloneVoice] {humanCount} users in {botChannel.Name}, leaving");
-                await LeaveVoice();
-                return;
-            }
-
-            return;
-        }
-
-        Console.WriteLine("[AloneVoice] Bot is not in any voice channel, searching for alone users...");
-
-        foreach (var guild in _client.Guilds)
-        {
-            foreach (var vc in guild.VoiceChannels)
-            {
-                var humanUsers = vc.Users.Where(u => !u.IsBot).ToList();
-                Console.WriteLine($"[AloneVoice]   {guild.Name}/{vc.Name}: {humanUsers.Count} human users");
-                if (humanUsers.Count == 1)
-                {
-                    Console.WriteLine($"[AloneVoice] {humanUsers[0].Username} is alone in {vc.Name}, joining");
-                    await JoinVoice(vc);
-                    return;
-                }
             }
         }
-
-        Console.WriteLine("[AloneVoice] No alone users found");
     }
 
     private async Task JoinVoice(SocketVoiceChannel channel)
