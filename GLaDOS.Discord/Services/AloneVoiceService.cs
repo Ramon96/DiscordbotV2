@@ -65,7 +65,16 @@ public class AloneVoiceService : IHostedService
         return Task.CompletedTask;
     }
 
-    private async Task OnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
+    private Task OnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
+    {
+        // Run off the gateway thread. Discord.Net invokes event callbacks on the gateway task,
+        // and JoinVoice -> ConnectAsync needs subsequent gateway events (the voice-server
+        // handshake) to complete; awaiting it here would block the gateway and deadlock the join.
+        _ = Task.Run(() => HandleVoiceStateAsync(user, oldState, newState));
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleVoiceStateAsync(SocketUser user, SocketVoiceState oldState, SocketVoiceState newState)
     {
         Console.WriteLine($"[AloneVoice] Voice state event: user={user.Username}, isBot={user.IsBot}, oldChannel={oldState.VoiceChannel?.Name}, newChannel={newState.VoiceChannel?.Name}");
 
