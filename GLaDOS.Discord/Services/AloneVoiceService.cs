@@ -8,6 +8,7 @@ public class AloneVoiceService : IHostedService
 {
     private readonly DiscordSocketClient _client;
     private IAudioClient? _audioClient;
+    private ulong? _currentChannelId;
     private readonly SemaphoreSlim _evalLock = new(1, 1);
     private bool _startupComplete;
 
@@ -32,22 +33,7 @@ public class AloneVoiceService : IHostedService
         {
             try
             {
-                var botChannel = FindBotChannel();
-
-                if (botChannel == null)
-                {
-                    foreach (var guild in _client.Guilds)
-                    foreach (var vc in guild.VoiceChannels)
-                    {
-                        var humans = vc.Users.Where(u => !u.IsBot).ToList();
-                        if (humans.Count == 1)
-                        {
-                            Console.WriteLine($"[AloneVoice] Found {humans[0].Username} alone in {vc.Name} after startup, joining");
-                            await JoinVoice(vc);
-                            break;
-                        }
-                    }
-                }
+                await EvaluateVoiceChannels();
             }
             finally
             {
@@ -88,7 +74,7 @@ public class AloneVoiceService : IHostedService
 
         try
         {
-            await EvaluateVoiceChannels(user, oldState.VoiceChannel, newState.VoiceChannel);
+            await EvaluateVoiceChannels();
         }
         catch (Exception ex)
         {
@@ -100,55 +86,64 @@ public class AloneVoiceService : IHostedService
         }
     }
 
-    private SocketVoiceChannel? FindBotChannel()
+    private SocketVoiceChannel? GetBotChannel()
     {
-        if (_audioClient == null)
+        if (_currentChannelId == null)
             return null;
 
         foreach (var guild in _client.Guilds)
-        foreach (var vc in guild.VoiceChannels)
-            if (vc.Users.Any(u => u.Id == _client.CurrentUser.Id))
+        {
+            var vc = guild.GetVoiceChannel(_currentChannelId.Value);
+            if (vc != null)
                 return vc;
+        }
         return null;
     }
 
-    private async Task EvaluateVoiceChannels(SocketUser user, SocketVoiceChannel? leftChannel, SocketVoiceChannel? joinedChannel)
+    /// <summary>
+    /// Recomputes the desired state from scratch on every voice event instead of reacting to
+    /// the old/new channel delta. The bot belongs in a voice channel if and only if that channel
+    /// has exactly one human: stay put if already correct, otherwise leave and/or join. This
+    /// avoids spurious leaves when a user changes mute/deafen state (which fires an event whose
+    /// old channel equals the bot's channel even though nobody actually left).
+    /// </summary>
+    private async Task EvaluateVoiceChannels()
     {
-        var botChannel = FindBotChannel();
+        var botChannel = GetBotChannel();
 
-        // User left a channel where the bot is — check if bot is now alone
-        if (leftChannel != null && botChannel?.Id == leftChannel.Id)
+        // If we're already sitting with exactly one human, nothing to do.
+        if (botChannel != null && botChannel.Users.Count(u => !u.IsBot) == 1)
+            return;
+
+        // Find a channel that has exactly one human — that's where the bot belongs.
+        SocketVoiceChannel? target = null;
+        foreach (var guild in _client.Guilds)
         {
-            var humanCount = leftChannel.Users.Count(u => !u.IsBot);
-            if (humanCount <= 1)
+            foreach (var vc in guild.VoiceChannels)
             {
-                Console.WriteLine($"[AloneVoice] User left {leftChannel.Name}, leaving");
-                await LeaveVoice();
-                botChannel = null;
-            }
-        }
-
-        // User joined a channel
-        if (joinedChannel != null)
-        {
-            var humanUsers = joinedChannel.Users.Where(u => !u.IsBot).ToList();
-
-            if (humanUsers.Count == 1)
-            {
-                if (botChannel == null || botChannel.Id != joinedChannel.Id)
+                if (vc.Users.Count(u => !u.IsBot) == 1)
                 {
-                    if (botChannel != null)
-                        await LeaveVoice();
-
-                    Console.WriteLine($"[AloneVoice] {humanUsers[0].Username} is alone in {joinedChannel.Name}, joining");
-                    await JoinVoice(joinedChannel);
+                    target = vc;
+                    break;
                 }
             }
-            else if (humanUsers.Count >= 2 && botChannel?.Id == joinedChannel.Id)
-            {
-                Console.WriteLine($"[AloneVoice] {humanUsers.Count} users in {botChannel.Name}, leaving");
-                await LeaveVoice();
-            }
+            if (target != null)
+                break;
+        }
+
+        // We're connected somewhere that no longer has exactly one human — leave.
+        if (botChannel != null && botChannel.Id != target?.Id)
+        {
+            Console.WriteLine($"[AloneVoice] Leaving {botChannel.Name} (no longer exactly one human present)");
+            await LeaveVoice();
+        }
+
+        // There's a channel with a lone human and we're not already there — join it.
+        if (target != null && target.Id != _currentChannelId)
+        {
+            var human = target.Users.First(u => !u.IsBot);
+            Console.WriteLine($"[AloneVoice] {human.Username} is alone in {target.Name}, joining");
+            await JoinVoice(target);
         }
     }
 
@@ -158,10 +153,12 @@ public class AloneVoiceService : IHostedService
         {
             Console.WriteLine($"[AloneVoice] Calling ConnectAsync on {channel.Name}...");
             _audioClient = await channel.ConnectAsync();
+            _currentChannelId = channel.Id;
             Console.WriteLine($"[AloneVoice] Successfully connected to {channel.Name}");
         }
         catch (Exception ex)
         {
+            _currentChannelId = null;
             Console.WriteLine($"[AloneVoice] Failed to join {channel.Name}: {ex.Message}");
         }
     }
@@ -180,5 +177,6 @@ public class AloneVoiceService : IHostedService
             }
             _audioClient = null;
         }
+        _currentChannelId = null;
     }
 }
