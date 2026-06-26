@@ -1,0 +1,167 @@
+name: AI PR Revise
+
+# Lets reviewers iterate on a pull request by leaving a comment that an AI picks up.
+# Comment on a PR starting with "/glados" followed by your instruction, e.g.:
+#     /glados rename the command to /weather and add a country option
+# An authorized user's comment triggers opencode to make the change on the PR branch,
+# build it, and push the result back to the same PR. The PR's existing checks
+# (build + contract tests) then re-run automatically on the new commit.
+#
+# NOTE: this workflow only takes effect once it exists on the default branch (main).
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  revise:
+    # Only run when:
+    #  - the comment is on a pull request (not a plain issue)
+    #  - the body starts with the /glados trigger
+    #  - the commenter has write access (OWNER / MEMBER / COLLABORATOR) — this is the
+    #    security gate: anyone can comment on a public repo, but only trusted users
+    #    may run the agent with a write-scoped token.
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/glados') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acknowledge the comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X POST "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" -f content=eyes || true
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out the PR branch
+        id: checkout_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Fail clearly on fork PRs — we can't push back to a fork with this token.
+          IS_FORK=$(gh pr view "${{ github.event.issue.number }}" --json isCrossRepository --jq .isCrossRepository)
+          if [ "$IS_FORK" = "true" ]; then
+            echo "fork=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "fork=false" >> "$GITHUB_OUTPUT"
+          gh pr checkout "${{ github.event.issue.number }}"
+
+      - name: Comment that fork PRs are unsupported
+        if: steps.checkout_pr.outputs.fork == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.issue.number }}" --body \
+            "I can't revise this PR automatically because it comes from a fork (I can't push to a fork's branch). Push the branch to this repo and try again."
+
+      - name: Setup .NET
+        if: steps.checkout_pr.outputs.fork != 'true'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install opencode
+        if: steps.checkout_pr.outputs.fork != 'true'
+        run: |
+          set -euo pipefail
+          curl -fsSL https://opencode.ai/install | bash
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+
+      - name: Run opencode with the reviewer's instruction
+        if: steps.checkout_pr.outputs.fork != 'true'
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          # Pass untrusted comment text through the environment, never inline into the
+          # script, to avoid shell injection from the comment body.
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+
+          # Strip the leading "/glados" trigger to get the instruction.
+          INSTRUCTION="${COMMENT_BODY#/glados}"
+          INSTRUCTION="${INSTRUCTION# }"
+
+          PROMPT="You are revising an existing pull request in response to reviewer feedback.
+          The PR branch is already checked out in the current directory. Apply the requested
+          change directly to this branch.
+
+          SAFETY RULES (forbidden to violate):
+          - Do NOT modify: Program.cs, ServiceCollectionExtensions.cs, any .csproj, docker-compose.yml,
+            Dockerfile, .env, appsettings*.json, or anything under .github/
+          - Do NOT run destructive shell commands, install software, or modify database schema
+            (no DROP/ALTER of existing tables/columns; new entities for new features are fine).
+          - Do NOT hardcode secrets.
+          - Stay on the current git branch. Do NOT create a new branch or open a new PR.
+          - Do NOT commit or push — the workflow handles that.
+
+          CONVENTIONS:
+          - New code lives in GLaDOS.Discord/Commands/ or GLaDOS.Discord/Services/.
+          - Commands implement IDiscordCommand and auto-register; no manual registration.
+          - Read 2-3 existing command files first to match patterns.
+
+          WORKFLOW:
+          1. Read the relevant existing code.
+          2. Make the requested change.
+          3. Run 'dotnet build GLaDOS.sln' and fix any errors until it builds cleanly.
+
+          REVIEWER INSTRUCTION:
+          $INSTRUCTION"
+
+          # Try free models in order; stop at the first that exits cleanly.
+          MODELS="opencode/deepseek-v4-flash-free opencode/nemotron-3-ultra-free opencode/mimo-v2.5-free"
+          OK=false
+          for MODEL in $MODELS; do
+            echo "::group::opencode run ($MODEL)"
+            if opencode run "$PROMPT" --dangerously-skip-permissions --model "$MODEL"; then
+              OK=true
+              echo "::endgroup::"
+              break
+            fi
+            echo "::endgroup::"
+            echo "Model $MODEL failed, trying next..."
+          done
+          if [ "$OK" != "true" ]; then
+            echo "All models failed." >&2
+            exit 1
+          fi
+
+      - name: Commit and push changes
+        id: push
+        if: steps.checkout_pr.outputs.fork != 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "GLaDOS Feature Bot"
+          git config user.email "glados-bot@discord.bot"
+          git add -A
+          if git diff --cached --quiet && git diff --quiet HEAD 2>/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Commit only if opencode left uncommitted changes (it may have committed already).
+          git commit -m "Apply review feedback: ${{ github.event.comment.html_url }}" || true
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Report result on the PR
+        if: steps.checkout_pr.outputs.fork != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "${{ steps.push.outputs.changed }}" = "true" ]; then
+            gh pr comment "${{ github.event.issue.number }}" --body \
+              "Pushed an update addressing your comment. The PR checks will re-run. ([logs]($RUN_URL))"
+          else
+            gh pr comment "${{ github.event.issue.number }}" --body \
+              "I processed your comment but didn't produce any code changes. ([logs]($RUN_URL))"
+          fi
