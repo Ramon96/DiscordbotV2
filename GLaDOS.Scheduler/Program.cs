@@ -120,7 +120,7 @@ if (runRecurringJobs)
     RecurringJob.AddOrUpdate<ShirtlessOldManJob>(
         "shirtless-old-man",
         job => job.ExecuteAsync(null, CancellationToken.None),
-        "0 10 * * *");
+        "0 10 * * 1");
 
     BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
 }
