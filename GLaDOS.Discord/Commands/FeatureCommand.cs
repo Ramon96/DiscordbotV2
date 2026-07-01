@@ -11,6 +11,7 @@ public partial class FeatureCommand : IDiscordCommand
 {
     private readonly FeatureGuardService _guardService;
     private readonly IConfiguration _configuration;
+    private readonly GitHubService _github;
 
     private static readonly TimeSpan AbsoluteTimeout = TimeSpan.FromMinutes(14);
     private static readonly TimeSpan IdleTimeout = TimeSpan.FromMinutes(4);
@@ -23,10 +24,11 @@ public partial class FeatureCommand : IDiscordCommand
 
     private const string RepoUrl = "https://github.com/ramon96/DiscordbotV2.git";
 
-    public FeatureCommand(FeatureGuardService guardService, IConfiguration configuration)
+    public FeatureCommand(FeatureGuardService guardService, IConfiguration configuration, GitHubService github)
     {
         _guardService = guardService;
         _configuration = configuration;
+        _github = github;
     }
 
     public string Name => "feature";
@@ -78,15 +80,60 @@ public partial class FeatureCommand : IDiscordCommand
             try
             {
                 await CloneRepoAsync(workDir, ct);
+                var baseSha = await GitRevParseHeadAsync(workDir, ct);
 
                 var (prUrl, ocOutput) = await RunOpencodeAsync(workDir, description, ct);
 
+                // Fast path: if opencode already opened a PR itself, just report it.
                 if (prUrl is not null)
+                {
                     await ModifyOriginalResponseAsync(command, $"Pull request created: {prUrl}");
-                else if (!string.IsNullOrWhiteSpace(ocOutput))
-                    await ModifyOriginalResponseAsync(command, $"opencode completed but no PR URL found. Output:\n```\n{Truncate(ocOutput, 1800)}\n```");
-                else
-                    await ModifyOriginalResponseAsync(command, $"opencode completed but produced no output and no PR. The model may have refused the request or encountered an issue.");
+                    return;
+                }
+
+                // Deterministic finisher: opencode's job is only to write code and build. The bot
+                // verifies the build and opens the PR itself, so a working feature always results
+                // in a PR even when the model skips the git/PR steps (a common free-model failure).
+                var changedFiles = await GetChangedFilesAsync(workDir, baseSha, ct);
+                if (changedFiles.Count == 0)
+                {
+                    var tail = string.IsNullOrWhiteSpace(ocOutput) ? "" : $"\nOutput:\n```\n{Truncate(ocOutput, 1500)}\n```";
+                    await ModifyOriginalResponseAsync(command,
+                        $"opencode finished but produced no file changes. The model may have refused the request.{tail}");
+                    return;
+                }
+
+                await ModifyOriginalResponseAsync(command,
+                    $"Code generated ({changedFiles.Count} file(s)). Verifying the build before opening a PR...");
+
+                var (buildOk, buildOutput) = await RunDotnetBuildAsync(workDir, ct);
+                if (!buildOk)
+                {
+                    await ModifyOriginalResponseAsync(command,
+                        $"The generated feature does not build, so no PR was opened:\n```\n{Truncate(buildOutput, 1600)}\n```");
+                    return;
+                }
+
+                var files = new List<(string Path, string Content)>();
+                foreach (var path in changedFiles)
+                {
+                    var full = Path.Combine(workDir, path);
+                    if (File.Exists(full))
+                        files.Add((path, await File.ReadAllTextAsync(full, ct)));
+                }
+
+                if (files.Count == 0)
+                {
+                    await ModifyOriginalResponseAsync(command, "opencode's changes could not be read back, so no PR was opened.");
+                    return;
+                }
+
+                var branch = $"{GitHubService.SanitizeBranchName(description)}-{Guid.NewGuid():N}";
+                var title = $"Feature: {Truncate(description, 60)}";
+                var body = $"AI-generated feature via `/feature`.\n\nRequest:\n> {description}\n\nThe build was verified before opening this PR.";
+
+                var createdUrl = await _github.CreateFeaturePullRequestAsync(branch, title, body, files, ct);
+                await ModifyOriginalResponseAsync(command, $"Pull request created: {createdUrl}");
             }
             finally
             {
@@ -135,6 +182,60 @@ public partial class FeatureCommand : IDiscordCommand
             var err = string.IsNullOrWhiteSpace(error) ? output : error;
             throw new InvalidOperationException($"git clone failed (exit {process.ExitCode}): {err}");
         }
+    }
+
+    /// <summary>Runs a process in <paramref name="workDir"/> and returns its exit code and combined output.</summary>
+    private static async Task<(int ExitCode, string Output)> RunProcessAsync(string fileName, IEnumerable<string> args, string workDir, CancellationToken ct)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = fileName,
+            WorkingDirectory = workDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        foreach (var a in args)
+            psi.ArgumentList.Add(a);
+
+        using var process = Process.Start(psi)!;
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+        var stderrTask = process.StandardError.ReadToEndAsync(ct);
+        await process.WaitForExitAsync(ct);
+        var stdout = await stdoutTask;
+        var stderr = await stderrTask;
+        return (process.ExitCode, stdout + stderr);
+    }
+
+    private static async Task<string> GitRevParseHeadAsync(string workDir, CancellationToken ct)
+    {
+        var (_, output) = await RunProcessAsync("git", new[] { "rev-parse", "HEAD" }, workDir, ct);
+        return output.Trim();
+    }
+
+    /// <summary>
+    /// Returns the added/modified files (relative paths) between <paramref name="baseSha"/> and the
+    /// working tree, whether or not opencode committed them. Deletions are excluded because the PR
+    /// helper commits file contents and can't represent removals.
+    /// </summary>
+    private static async Task<List<string>> GetChangedFilesAsync(string workDir, string baseSha, CancellationToken ct)
+    {
+        await RunProcessAsync("git", new[] { "add", "-A" }, workDir, ct);
+        var (_, output) = await RunProcessAsync(
+            "git",
+            new[] { "diff", "--cached", "--name-only", "--diff-filter=ACM", baseSha },
+            workDir, ct);
+
+        return output
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+    }
+
+    private static async Task<(bool Ok, string Output)> RunDotnetBuildAsync(string workDir, CancellationToken ct)
+    {
+        var (exit, output) = await RunProcessAsync("dotnet", new[] { "build", "GLaDOS.sln" }, workDir, ct);
+        return (exit == 0, output);
     }
 
     private static readonly string[] FallbackModels =
@@ -342,7 +443,6 @@ public partial class FeatureCommand : IDiscordCommand
             ALLOWED ACTIONS:
             - Create new C# files in GLaDOS.Discord/Commands/ or GLaDOS.Discord/Services/
             - Run dotnet build to verify compilation (use bash)
-            - Create git branches, commit, push, and open PRs (use bash)
             - Read any existing files to understand the codebase
 
             NOTE: New command classes that implement IDiscordCommand are automatically registered in DI.
@@ -362,12 +462,12 @@ public partial class FeatureCommand : IDiscordCommand
 
             WORKFLOW (follow in order — do NOT skip steps):
             1. Read relevant existing code to understand patterns and conventions
-            2. Create a new git branch with a descriptive name based on the feature
-            3. Write the new code files
-            4. Run `dotnet build GLaDOS.sln` — if it FAILS, FIX the errors and try again. DO NOT proceed until the build passes with zero errors.
-            5. Use bash: `git add -A && git commit -m "description" && git push -u origin HEAD`
-            6. Use bash to create the PR: `gh pr create --base main --title "Feature: description" --body "Summary of changes"`
-            7. The `gh pr create` command will output the PR URL on stdout — that URL is what the user needs.
+            2. Write the new code file(s) under GLaDOS.Discord/Commands/ or GLaDOS.Discord/Services/
+            3. Run `dotnet build GLaDOS.sln` — if it FAILS, FIX the errors and rebuild. Do NOT stop until the build passes with zero errors.
+
+            IMPORTANT: Do NOT create a git branch, do NOT commit, do NOT push, and do NOT open a pull
+            request. The bot does all of that for you automatically after you finish. Your only job is to
+            leave the new/edited files in place with a clean `dotnet build`.
 
             FEATURE REQUEST:
             {description}
