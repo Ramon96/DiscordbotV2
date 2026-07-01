@@ -33,7 +33,8 @@ public class AloneVoiceService : IHostedService
         {
             try
             {
-                await EvaluateVoiceChannels();
+                // Best-effort scan at startup: if someone is already alone in a channel, join them.
+                await ScanAndJoinIfAloneAsync();
             }
             finally
             {
@@ -74,7 +75,7 @@ public class AloneVoiceService : IHostedService
 
         try
         {
-            await EvaluateVoiceChannels();
+            await EvaluateVoiceChannels(oldState.VoiceChannel, newState.VoiceChannel);
         }
         catch (Exception ex)
         {
@@ -86,64 +87,68 @@ public class AloneVoiceService : IHostedService
         }
     }
 
-    private SocketVoiceChannel? GetBotChannel()
+    /// <summary>
+    /// Reacts to a single voice-state change using the channel objects from the event (not a
+    /// guild-cache scan, which proved unreliable). The bot should be present only while a channel
+    /// has exactly one human.
+    /// </summary>
+    private async Task EvaluateVoiceChannels(SocketVoiceChannel? leftChannel, SocketVoiceChannel? joinedChannel)
     {
-        if (_currentChannelId == null)
-            return null;
+        var botChannelId = _currentChannelId;
 
-        foreach (var guild in _client.Guilds)
+        // A user actually LEFT the bot's channel (moved elsewhere or disconnected). This must be a
+        // real move — leftChannel == bot's channel AND they did not stay in it. A mute/deafen event
+        // reports old == new == the same channel, so it is intentionally NOT treated as a leave.
+        if (botChannelId != null && leftChannel?.Id == botChannelId && joinedChannel?.Id != botChannelId)
         {
-            var vc = guild.GetVoiceChannel(_currentChannelId.Value);
-            if (vc != null)
-                return vc;
+            var humansRemaining = leftChannel!.Users.Count(u => !u.IsBot);
+            if (humansRemaining != 1)
+            {
+                // 0 humans -> empty; 2+ -> not "alone". Exactly 1 means the last person is now alone,
+                // so the bot stays.
+                Console.WriteLine($"[AloneVoice] {humansRemaining} human(s) left in {leftChannel.Name}, leaving");
+                await LeaveVoice();
+                botChannelId = null;
+            }
         }
-        return null;
+
+        // Someone joined (or is present in) a channel.
+        if (joinedChannel != null)
+        {
+            var humans = joinedChannel.Users.Count(u => !u.IsBot);
+
+            if (humans == 1 && botChannelId != joinedChannel.Id)
+            {
+                if (botChannelId != null)
+                    await LeaveVoice();
+
+                Console.WriteLine($"[AloneVoice] Someone is alone in {joinedChannel.Name}, joining");
+                await JoinVoice(joinedChannel);
+            }
+            else if (humans >= 2 && botChannelId == joinedChannel.Id)
+            {
+                Console.WriteLine($"[AloneVoice] {humans} humans in {joinedChannel.Name}, leaving");
+                await LeaveVoice();
+            }
+        }
     }
 
-    /// <summary>
-    /// Recomputes the desired state from scratch on every voice event instead of reacting to
-    /// the old/new channel delta. The bot belongs in a voice channel if and only if that channel
-    /// has exactly one human: stay put if already correct, otherwise leave and/or join. This
-    /// avoids spurious leaves when a user changes mute/deafen state (which fires an event whose
-    /// old channel equals the bot's channel even though nobody actually left).
-    /// </summary>
-    private async Task EvaluateVoiceChannels()
+    private async Task ScanAndJoinIfAloneAsync()
     {
-        var botChannel = GetBotChannel();
-
-        // If we're already sitting with exactly one human, nothing to do.
-        if (botChannel != null && botChannel.Users.Count(u => !u.IsBot) == 1)
+        if (_currentChannelId != null)
             return;
 
-        // Find a channel that has exactly one human — that's where the bot belongs.
-        SocketVoiceChannel? target = null;
         foreach (var guild in _client.Guilds)
         {
             foreach (var vc in guild.VoiceChannels)
             {
                 if (vc.Users.Count(u => !u.IsBot) == 1)
                 {
-                    target = vc;
-                    break;
+                    Console.WriteLine($"[AloneVoice] Someone is alone in {vc.Name} at startup, joining");
+                    await JoinVoice(vc);
+                    return;
                 }
             }
-            if (target != null)
-                break;
-        }
-
-        // We're connected somewhere that no longer has exactly one human — leave.
-        if (botChannel != null && botChannel.Id != target?.Id)
-        {
-            Console.WriteLine($"[AloneVoice] Leaving {botChannel.Name} (no longer exactly one human present)");
-            await LeaveVoice();
-        }
-
-        // There's a channel with a lone human and we're not already there — join it.
-        if (target != null && target.Id != _currentChannelId)
-        {
-            var human = target.Users.First(u => !u.IsBot);
-            Console.WriteLine($"[AloneVoice] {human.Username} is alone in {target.Name}, joining");
-            await JoinVoice(target);
         }
     }
 
