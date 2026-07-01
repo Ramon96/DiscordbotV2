@@ -23,9 +23,10 @@ RUN dotnet publish "GLaDOS.Scheduler.csproj" -c Release -o /app/publish/schedule
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final-discord
 WORKDIR /app
-# libsodium23 + libopus0 are required by Discord.Net to open voice connections on Linux
+# libopus-dev + libsodium-dev provide the unversioned libopus.so / libsodium.so symlinks that
+# .NET's DllImport resolver needs; the runtime-only packages ship versioned sonames only.
 RUN apt-get update && \
-    apt-get install -y libsodium23 libopus0 && \
+    apt-get install -y libopus-dev libsodium-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=publish-discord /app/publish/discord .
@@ -36,7 +37,7 @@ WORKDIR /app
 COPY --from=publish-scheduler /app/publish/scheduler .
 
 RUN apt-get update && \
-    apt-get install -y curl git libsodium23 libopus0 && \
+    apt-get install -y curl git libopus-dev libsodium-dev && \
     curl -fsSL https://opencode.ai/install | bash && \
     ln -s /root/.opencode/bin/opencode /usr/local/bin/opencode && \
     curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
