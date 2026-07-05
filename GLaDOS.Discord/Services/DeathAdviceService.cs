@@ -1,5 +1,6 @@
 using Discord.WebSocket;
 using Glados.Discord.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace Glados.Discord.Services;
@@ -8,6 +9,7 @@ public class DeathAdviceService : IHostedService
 {
     private readonly DiscordSocketClient _client;
     private readonly AIService _ai;
+    private readonly int _chance;
 
     private static readonly string SystemPrompt =
         "You are a sarcastic gaming advisor. Someone just died in Old School RuneScape. " +
@@ -19,10 +21,13 @@ public class DeathAdviceService : IHostedService
         "'Did you consider just not dying?', " +
         "'The wilderness is dangerous, who knew?'";
 
-    public DeathAdviceService(DiscordSocketClient client, AIService ai)
+    public DeathAdviceService(DiscordSocketClient client, AIService ai, IConfiguration configuration)
     {
         _client = client;
         _ai = ai;
+        _chance = configuration.GetValue<int>("DeathAdvice:Chance", 3);
+        if (_chance < 1)
+            _chance = 1;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -49,9 +54,9 @@ public class DeathAdviceService : IHostedService
 
         Console.WriteLine($"[DeathAdvice] Webhook message with image detected: {message.Id} in channel {message.Channel.Id}");
 
-        if (Random.Shared.Next(3) != 0)
+        if (Random.Shared.Next(_chance) != 0)
         {
-            Console.WriteLine($"[DeathAdvice] Skipped by random roll (2/3 chance)");
+            Console.WriteLine($"[DeathAdvice] Skipped by random roll ({_chance - 1}/{_chance} chance)");
             return;
         }
 
