@@ -4,6 +4,7 @@ import { ApiError, authApi, type CurrentUser } from './api'
 import LoginPage from './pages/Login'
 import DashboardLayout from './components/DashboardLayout'
 import MetricsPage from './pages/MetricsPage'
+import JobsPage from './pages/JobsPage'
 import LogsPage from './pages/LogsPage'
 
 type AuthState =
@@ -53,6 +54,7 @@ export default function App() {
         }
       >
         <Route index element={<MetricsPage />} />
+        <Route path="jobs" element={<JobsPage />} />
         <Route path="logs" element={<LogsPage />} />
       </Route>
     </Routes>
