@@ -7,7 +7,7 @@ import { formatRelative } from '../lib/format'
 import MetricCard from '../components/MetricCard'
 
 export default function JobsPage() {
-  const { onLogout } = useOutletContext<DashboardOutletContext>()
+  const { onLogout, user } = useOutletContext<DashboardOutletContext>()
   const { data: jobs, error } = usePolling(jobsApi.get, 10000)
   const { data: stats } = usePolling(statsApi.get, 15000)
   const [triggering, setTriggering] = useState<string | null>(null)
@@ -74,13 +74,17 @@ export default function JobsPage() {
                 </td>
                 <td className="nowrap">{formatRelative(job.nextExecution)}</td>
                 <td className="nowrap">
-                  <button
-                    className="ghost small"
-                    disabled={triggering === job.id}
-                    onClick={() => handleTrigger(job.id)}
-                  >
-                    {triggering === job.id ? 'Running…' : 'Run now'}
-                  </button>
+                  {user.role === 'Admin' ? (
+                    <button
+                      className="ghost small"
+                      disabled={triggering === job.id}
+                      onClick={() => handleTrigger(job.id)}
+                    >
+                      {triggering === job.id ? 'Running…' : 'Run now'}
+                    </button>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
                 </td>
               </tr>
             ))}

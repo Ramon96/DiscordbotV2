@@ -3,6 +3,7 @@ import { authApi, type CurrentUser } from '../api'
 
 export interface DashboardOutletContext {
   onLogout: () => void
+  user: CurrentUser
 }
 
 interface DashboardLayoutProps {
@@ -41,14 +42,26 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
           </NavLink>
         </nav>
         <div className="spacer" />
-        <span className="muted">{user.username}</span>
+        <span className="user-chip">
+          {user.avatarUrl && (
+            <img
+              className="user-avatar"
+              src={user.avatarUrl}
+              alt=""
+              onError={(event) => {
+                event.currentTarget.style.display = 'none'
+              }}
+            />
+          )}
+          <span className="muted">{user.name}</span>
+        </span>
         <button className="ghost" onClick={handleLogout}>
           Log out
         </button>
       </header>
 
       <main className="content wide">
-        <Outlet context={{ onLogout } satisfies DashboardOutletContext} />
+        <Outlet context={{ onLogout, user } satisfies DashboardOutletContext} />
       </main>
     </div>
   )

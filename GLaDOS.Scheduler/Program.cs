@@ -14,6 +14,9 @@ using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
 using Hangfire;
 using Serilog;
 using Serilog.Events;
@@ -36,7 +39,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDashboardAuth();
+builder.Services.AddDashboardAuth(builder.Configuration);
 builder.Services.AddDashboardMetrics();
 
 builder.Services.AddCoreServices(builder.Configuration);
@@ -185,6 +188,24 @@ else
     RecurringJob.RemoveIfExists("shirtless-old-man");
     RecurringJob.RemoveIfExists("log-retention");
 
+    // Development-only: mint a dashboard cookie with a given role so auth-gated endpoints can be
+    // exercised locally without the live Discord OAuth flow. Never mapped in Production.
+    app.MapGet("/api/auth/dev-login", async (HttpContext context, string? role) =>
+    {
+        var identity = new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "0"),
+            new Claim(ClaimTypes.Name, "dev"),
+            new Claim(ClaimTypes.Role, role ?? "Admin"),
+        }, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        await context.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity),
+            new AuthenticationProperties { IsPersistent = true });
+
+        return Results.Ok(new { role = role ?? "Admin" });
+    });
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>
         {

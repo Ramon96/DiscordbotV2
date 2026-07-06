@@ -20,8 +20,7 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const user = await authApi.me()
-      setAuth({ status: 'authed', user })
+      setAuth({ status: 'authed', user: await authApi.me() })
     } catch (error) {
       if (!(error instanceof ApiError)) {
         console.error('Failed to resolve auth state', error)
@@ -38,23 +37,15 @@ export default function App() {
     return <div className="center muted">Loading…</div>
   }
 
+  if (auth.status === 'anon') {
+    return <LoginPage />
+  }
+
   return (
     <Routes>
       <Route
-        path="/login"
-        element={
-          auth.status === 'authed'
-            ? <Navigate to="/" replace />
-            : <LoginPage onAuthenticated={refresh} />
-        }
-      />
-      <Route
         path="/"
-        element={
-          auth.status === 'authed'
-            ? <DashboardLayout user={auth.user} onLogout={() => setAuth({ status: 'anon' })} />
-            : <Navigate to="/login" replace />
-        }
+        element={<DashboardLayout user={auth.user} onLogout={() => setAuth({ status: 'anon' })} />}
       >
         <Route index element={<MetricsPage />} />
         <Route path="players" element={<PlayersPage />} />
@@ -63,6 +54,7 @@ export default function App() {
         <Route path="logs" element={<LogsPage />} />
         <Route path="changelog" element={<ChangelogPage />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

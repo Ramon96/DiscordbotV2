@@ -1,5 +1,8 @@
 export interface CurrentUser {
-  username: string
+  id: string
+  name: string
+  avatarUrl: string | null
+  role: string
 }
 
 export class ApiError extends Error {
@@ -25,12 +28,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const authApi = {
   me: () => request<CurrentUser>('/api/auth/me'),
-  login: (username: string, password: string) =>
-    request<CurrentUser>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
+  // Login is a full-page redirect into the Discord OAuth flow, not a fetch.
+  loginUrl: '/api/auth/login',
 }
 
 export interface ProcessMetrics {

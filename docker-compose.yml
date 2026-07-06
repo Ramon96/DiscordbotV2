@@ -30,6 +30,9 @@ services:
       - Discord__Token=${DISCORD_TOKEN}
       - Discord__GuildId=${DISCORD_GUILD_ID}
       - Discord__OldschoolRunescapeChannelId=${DISCORD_OLDSCHOOLRUNESCAPECHANNEL_ID}
+      - Discord__ClientId=${DISCORD_CLIENT_ID}
+      - Discord__ClientSecret=${DISCORD_CLIENT_SECRET}
+      - Dashboard__AdminDiscordIds=${DASHBOARD_ADMIN_DISCORD_IDS}
       - Hangfire__Username=${HANGFIRE_USERNAME}
       - Hangfire__Password=${HANGFIRE_PASSWORD}
       - OpenCode__ApiKey=${OPENCODE_APIKEY}

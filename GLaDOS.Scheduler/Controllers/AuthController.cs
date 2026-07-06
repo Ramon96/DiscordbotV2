@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using GLaDOS.Scheduler.Application.Dashboard;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -10,43 +11,15 @@ namespace GLaDOS.Scheduler.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IConfiguration _configuration;
-
-    public AuthController(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-
-    [HttpPost("login")]
+    [HttpGet("login")]
     [AllowAnonymous]
-    [ProducesResponseType(200)]
-    [ProducesResponseType(401)]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
+    public IActionResult Login([FromQuery] string? returnUrl)
     {
-        var expectedUser = _configuration["Hangfire:Username"];
-        var expectedPass = _configuration["Hangfire:Password"];
-
-        if (string.IsNullOrEmpty(expectedUser) ||
-            request.Username != expectedUser ||
-            request.Password != expectedPass)
-        {
-            return Unauthorized();
-        }
-
-        var identity = new ClaimsIdentity(
-            new[] { new Claim(ClaimTypes.Name, expectedUser) },
-            CookieAuthenticationDefaults.AuthenticationScheme);
-
-        // IsPersistent makes the browser keep the cookie across restarts (for the scheme's
-        // ExpireTimeSpan); without it the cookie is a session cookie and login is lost on close.
-        var authProperties = new AuthenticationProperties { IsPersistent = true };
-
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(identity),
-            authProperties);
-
-        return Ok(new CurrentUserResponse(expectedUser));
+        // Kicks off the Discord OAuth flow; the handler signs in the cookie on the callback and
+        // redirects back to the SPA.
+        var redirect = string.IsNullOrEmpty(returnUrl) ? "/dashboard/" : returnUrl;
+        var properties = new AuthenticationProperties { RedirectUri = redirect, IsPersistent = true };
+        return Challenge(properties, DashboardAuthExtensions.DiscordScheme);
     }
 
     [HttpPost("logout")]
@@ -64,10 +37,19 @@ public class AuthController : ControllerBase
     [ProducesResponseType(401)]
     public IActionResult Me()
     {
-        return Ok(new CurrentUserResponse(User.Identity?.Name ?? string.Empty));
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var name = User.FindFirstValue("urn:discord:global_name")
+                   ?? User.FindFirstValue(ClaimTypes.Name)
+                   ?? "friend";
+        var avatarHash = User.FindFirstValue("urn:discord:avatar");
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? "Viewer";
+
+        var avatarUrl = !string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(avatarHash)
+            ? $"https://cdn.discordapp.com/avatars/{id}/{avatarHash}.png"
+            : null;
+
+        return Ok(new CurrentUserResponse(id, name, avatarUrl, role));
     }
 }
 
-public record LoginRequest(string Username, string Password);
-
-public record CurrentUserResponse(string Username);
+public record CurrentUserResponse(string Id, string Name, string? AvatarUrl, string Role);
