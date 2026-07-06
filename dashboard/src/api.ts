@@ -163,3 +163,15 @@ export const playersApi = {
   list: () => request<PlayerSummary[]>('/api/players'),
   get: (id: string) => request<PlayerDetail>(`/api/players/${id}`),
 }
+
+export interface ChangelogEntry {
+  number: number
+  title: string
+  mergedAt: string
+  author: string
+  url: string
+}
+
+export const changelogApi = {
+  get: () => request<ChangelogEntry[]>('/api/changelog'),
+}
