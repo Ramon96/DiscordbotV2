@@ -180,6 +180,17 @@ export const playersApi = {
     request<XpPoint[]>(`/api/players/${id}/skill-history?name=${encodeURIComponent(name)}`),
   bossHistory: (id: string, name: string) =>
     request<BossPoint[]>(`/api/players/${id}/boss-history?name=${encodeURIComponent(name)}`),
+  collectionLog: (id: string) => request<CollectionLogResponse>(`/api/players/${id}/collection-log`),
+}
+
+export interface CollectionLogItem {
+  itemId: number
+  name: string | null
+}
+
+export interface CollectionLogResponse {
+  count: number
+  items: CollectionLogItem[]
 }
 
 export interface ChangelogEntry {

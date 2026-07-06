@@ -573,3 +573,42 @@ button.small {
   margin: 0;
   font-size: 1rem;
 }
+
+.collog-count {
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+}
+
+.collog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 0.6rem;
+}
+
+.collog-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.3rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.collog-item img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.collog-name {
+  font-size: 0.68rem;
+  color: var(--muted);
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
