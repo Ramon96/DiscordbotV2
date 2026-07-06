@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ApiError, authApi, type CurrentUser } from './api'
 import LoginPage from './pages/Login'
-import DashboardPage from './pages/Dashboard'
+import DashboardLayout from './components/DashboardLayout'
+import MetricsPage from './pages/MetricsPage'
+import LogsPage from './pages/LogsPage'
 
 type AuthState =
   | { status: 'loading' }
@@ -43,13 +45,16 @@ export default function App() {
         }
       />
       <Route
-        path="/*"
+        path="/"
         element={
           auth.status === 'authed'
-            ? <DashboardPage user={auth.user} onLogout={() => setAuth({ status: 'anon' })} />
+            ? <DashboardLayout user={auth.user} onLogout={() => setAuth({ status: 'anon' })} />
             : <Navigate to="/login" replace />
         }
-      />
+      >
+        <Route index element={<MetricsPage />} />
+        <Route path="logs" element={<LogsPage />} />
+      </Route>
     </Routes>
   )
 }

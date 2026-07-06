@@ -60,3 +60,32 @@ export interface MetricsResponse {
 export const metricsApi = {
   get: () => request<MetricsResponse>('/api/metrics'),
 }
+
+export interface LogEntry {
+  id: number
+  timestamp: string
+  level: string
+  message: string
+  exception: string | null
+  sourceContext: string | null
+}
+
+export interface LogQuery {
+  level?: string
+  search?: string
+  limit?: number
+}
+
+export const logsApi = {
+  get: (query: LogQuery) => {
+    const params = new URLSearchParams()
+    if (query.level) {
+      params.set('level', query.level)
+    }
+    if (query.search) {
+      params.set('search', query.search)
+    }
+    params.set('limit', String(query.limit ?? 200))
+    return request<LogEntry[]>(`/api/logs?${params.toString()}`)
+  },
+}
