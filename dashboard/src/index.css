@@ -444,16 +444,21 @@ button.small {
 
 .skill {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.5rem 0.7rem;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.7rem;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
 }
 
+.skill-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
 .skill-name {
-  flex: 1;
   font-size: 0.85rem;
 }
 
@@ -461,6 +466,20 @@ button.small {
   font-weight: 700;
 }
 
-.skill-xp {
-  font-size: 0.75rem;
+.skill-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+}
+
+.skill-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.skill-bar-fill {
+  height: 100%;
+  background: var(--accent);
 }

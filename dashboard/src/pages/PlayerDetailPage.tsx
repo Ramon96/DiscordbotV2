@@ -12,6 +12,7 @@ import {
 import { ApiError, playersApi, type PlayerDetail } from '../api'
 import type { DashboardOutletContext } from '../components/DashboardLayout'
 import { formatCompact, formatDate } from '../lib/format'
+import { levelProgress, xpToNextLevel } from '../lib/osrs'
 
 export default function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -117,13 +118,29 @@ export default function PlayerDetailPage() {
         <div className="skills-grid">
           {player.skills
             .filter((skill) => skill.name !== 'Overall')
-            .map((skill) => (
-              <div key={skill.skillId} className="skill">
-                <span className="skill-name">{skill.name}</span>
-                <span className="skill-level">{skill.level}</span>
-                <span className="skill-xp muted">{formatCompact(skill.experience)}</span>
-              </div>
-            ))}
+            .map((skill) => {
+              const toNext = xpToNextLevel(skill.level, skill.experience)
+              const progress = levelProgress(skill.level, skill.experience)
+              return (
+                <div key={skill.skillId} className="skill">
+                  <div className="skill-top">
+                    <span className="skill-name">{skill.name}</span>
+                    <span className="skill-level">{skill.level}</span>
+                  </div>
+                  <div className="skill-meta">
+                    <span className="muted">{formatCompact(skill.experience)} xp</span>
+                    <span className="muted">
+                      {toNext != null ? `${formatCompact(toNext)} to go` : 'maxed'}
+                    </span>
+                  </div>
+                  {progress != null && (
+                    <div className="skill-bar">
+                      <div className="skill-bar-fill" style={{ width: `${progress * 100}%` }} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
         </div>
       </div>
     </div>
