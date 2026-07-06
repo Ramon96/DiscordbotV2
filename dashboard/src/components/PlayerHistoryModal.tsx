@@ -10,6 +10,8 @@ import {
 } from 'recharts'
 import { ApiError, playersApi } from '../api'
 import { formatCompact, formatDate } from '../lib/format'
+import TimeRangeButtons from './TimeRangeButtons'
+import { filterByRange, type TimeRange } from '../lib/range'
 
 export interface HistorySelection {
   kind: 'skill' | 'boss'
@@ -31,6 +33,7 @@ export default function PlayerHistoryModal({
 }: PlayerHistoryModalProps) {
   const [points, setPoints] = useState<{ date: string; value: number }[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [range, setRange] = useState<TimeRange>('month')
 
   useEffect(() => {
     let active = true
@@ -41,10 +44,10 @@ export default function PlayerHistoryModal({
       selection.kind === 'skill'
         ? playersApi
             .skillHistory(playerId, selection.name)
-            .then((data) => data.map((point) => ({ date: formatDate(point.date), value: point.experience })))
+            .then((data) => data.map((point) => ({ date: point.date, value: point.experience })))
         : playersApi
             .bossHistory(playerId, selection.name)
-            .then((data) => data.map((point) => ({ date: formatDate(point.date), value: point.score })))
+            .then((data) => data.map((point) => ({ date: point.date, value: point.score })))
 
     load
       .then((mapped) => {
@@ -70,6 +73,9 @@ export default function PlayerHistoryModal({
 
   const unit = selection.kind === 'skill' ? 'XP' : 'kills'
   const heading = selection.kind === 'skill' ? 'XP over time' : 'kill count over time'
+  const chartData = points
+    ? filterByRange(points, range).map((point) => ({ date: formatDate(point.date), value: point.value }))
+    : []
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -83,18 +89,23 @@ export default function PlayerHistoryModal({
           </button>
         </div>
 
+        <div className="range-row">
+          <TimeRangeButtons value={range} onChange={setRange} />
+        </div>
+
         {error ? (
           <p className="muted">{error}</p>
         ) : !points ? (
           <p className="muted">Loading…</p>
-        ) : points.length < 2 ? (
-          <p className="muted">Not enough history yet — snapshots are captured daily.</p>
+        ) : chartData.length < 2 ? (
+          <p className="muted">Not enough history in this range yet — snapshots are captured daily.</p>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={points} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
+            <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fill: 'var(--muted)', fontSize: 11 }} minTickGap={30} />
               <YAxis
+                domain={['auto', 'auto']}
                 tick={{ fill: 'var(--muted)', fontSize: 11 }}
                 width={48}
                 tickFormatter={(value) => formatCompact(value as number)}
