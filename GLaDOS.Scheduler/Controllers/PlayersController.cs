@@ -1,3 +1,4 @@
+using Glados.Discord.Commands;
 using GLaDOS.Domain.OldschoolRunescape;
 using GLaDOS.Infra.EntityFramework;
 using Microsoft.AspNetCore.Authorization;
@@ -101,7 +102,19 @@ public class PlayersController : ControllerBase
             .Select(snapshot => new XpPoint(snapshot.SnapshotDate, snapshot.Experience, snapshot.Level))
             .ToListAsync(cancellationToken);
 
-        return Ok(new PlayerDetail(id, username, skills, xpHistory));
+        var activities = await _dbContext.Set<OldschoolRunescapeActivity>()
+            .Where(activity => activity.OldschoolRunescapeUserId == id)
+            .Select(activity => new { activity.ActivityId, activity.Name, activity.Score, activity.Rank })
+            .ToListAsync(cancellationToken);
+
+        // Keep only ranked kills of known bosses (activities also include clues/minigames).
+        var bosses = activities
+            .Where(activity => activity.Score > 0 && BossList.Bosses.Contains(activity.Name))
+            .OrderByDescending(activity => activity.Score)
+            .Select(activity => new PlayerBoss(activity.ActivityId, activity.Name, activity.Score, activity.Rank))
+            .ToList();
+
+        return Ok(new PlayerDetail(id, username, skills, xpHistory, bosses));
     }
 }
 
@@ -117,8 +130,11 @@ public record PlayerSkill(uint SkillId, string Name, int Level, long Experience,
 
 public record XpPoint(DateTime Date, long Experience, int Level);
 
+public record PlayerBoss(uint ActivityId, string Name, int Score, int Rank);
+
 public record PlayerDetail(
     Guid UserId,
     string Username,
     IReadOnlyList<PlayerSkill> Skills,
-    IReadOnlyList<XpPoint> XpHistory);
+    IReadOnlyList<XpPoint> XpHistory,
+    IReadOnlyList<PlayerBoss> Bosses);

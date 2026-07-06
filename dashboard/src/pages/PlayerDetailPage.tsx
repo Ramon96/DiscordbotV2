@@ -19,6 +19,7 @@ export default function PlayerDetailPage() {
   const { onLogout } = useOutletContext<DashboardOutletContext>()
   const [player, setPlayer] = useState<PlayerDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [view, setView] = useState<'skills' | 'bosses'>('skills')
 
   useEffect(() => {
     if (!id) {
@@ -114,34 +115,61 @@ export default function PlayerDetailPage() {
       </div>
 
       <div className="card">
-        <h3>Skills</h3>
-        <div className="skills-grid">
-          {player.skills
-            .filter((skill) => skill.name !== 'Overall')
-            .map((skill) => {
-              const toNext = xpToNextLevel(skill.level, skill.experience)
-              const progress = levelProgress(skill.level, skill.experience)
-              return (
-                <div key={skill.skillId} className="skill">
-                  <div className="skill-top">
-                    <span className="skill-name">{skill.name}</span>
-                    <span className="skill-level">{skill.level}</span>
-                  </div>
-                  <div className="skill-meta">
-                    <span className="muted">{formatCompact(skill.experience)} xp</span>
-                    <span className="muted">
-                      {toNext != null ? `${formatCompact(toNext)} to go` : 'maxed'}
-                    </span>
-                  </div>
-                  {progress != null && (
-                    <div className="skill-bar">
-                      <div className="skill-bar-fill" style={{ width: `${progress * 100}%` }} />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+        <div className="tab-toggle">
+          <button className={view === 'skills' ? 'active' : ''} onClick={() => setView('skills')}>
+            Skills
+          </button>
+          <button className={view === 'bosses' ? 'active' : ''} onClick={() => setView('bosses')}>
+            Bosses
+          </button>
         </div>
+
+        {view === 'skills' ? (
+          <div className="skills-grid">
+            {player.skills
+              .filter((skill) => skill.name !== 'Overall')
+              .map((skill) => {
+                const toNext = xpToNextLevel(skill.level, skill.experience)
+                const progress = levelProgress(skill.level, skill.experience)
+                return (
+                  <div key={skill.skillId} className="skill">
+                    <div className="skill-top">
+                      <span className="skill-name">{skill.name}</span>
+                      <span className="skill-level">{skill.level}</span>
+                    </div>
+                    <div className="skill-meta">
+                      <span className="muted">{formatCompact(skill.experience)} xp</span>
+                      <span className="muted">
+                        {toNext != null ? `${formatCompact(toNext)} to go` : 'maxed'}
+                      </span>
+                    </div>
+                    {progress != null && (
+                      <div className="skill-bar">
+                        <div className="skill-bar-fill" style={{ width: `${progress * 100}%` }} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
+        ) : player.bosses.length === 0 ? (
+          <p className="muted">No boss kills on the hiscores yet.</p>
+        ) : (
+          <div className="skills-grid">
+            {player.bosses.map((boss) => (
+              <div key={boss.activityId} className="skill">
+                <div className="skill-top">
+                  <span className="skill-name">{boss.name}</span>
+                  <span className="skill-level">{boss.score.toLocaleString()}</span>
+                </div>
+                <div className="skill-meta">
+                  <span className="muted">kills</span>
+                  <span className="muted">rank {boss.rank.toLocaleString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

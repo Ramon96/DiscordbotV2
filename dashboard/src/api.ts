@@ -152,11 +152,19 @@ export interface XpPoint {
   level: number
 }
 
+export interface PlayerBoss {
+  activityId: number
+  name: string
+  score: number
+  rank: number
+}
+
 export interface PlayerDetail {
   userId: string
   username: string
   skills: PlayerSkill[]
   xpHistory: XpPoint[]
+  bosses: PlayerBoss[]
 }
 
 export const playersApi = {

@@ -513,3 +513,24 @@ button.small {
   font-size: 0.78rem;
   margin-top: 0.2rem;
 }
+
+.tab-toggle {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.tab-toggle button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.35rem 0.9rem;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.tab-toggle button.active {
+  color: var(--text);
+  border-color: var(--accent);
+}
