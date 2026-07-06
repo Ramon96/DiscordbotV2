@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 
 namespace GLaDOS.Scheduler.Application.Dashboard;
@@ -7,6 +8,14 @@ public static class DashboardAuthExtensions
 {
     public static IServiceCollection AddDashboardAuth(this IServiceCollection services)
     {
+        // Persist the Data Protection key ring to a mounted volume. Cookie auth encrypts the
+        // cookie with these keys; without a stable key ring, every container recreation (each
+        // deploy) generates new keys and invalidates existing login cookies — logging everyone
+        // out on every deploy.
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
+            .SetApplicationName("glados-dashboard");
+
         // TLS terminates at the nginx reverse proxy, so trust its forwarded scheme/ip
         // headers; without this the app thinks every request is plain HTTP and refuses
         // to send the Secure dashboard cookie.
