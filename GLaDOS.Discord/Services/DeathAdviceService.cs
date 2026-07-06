@@ -25,7 +25,7 @@ public class DeathAdviceService : IHostedService
     {
         _client = client;
         _ai = ai;
-        _chance = configuration.GetValue<int>("DeathAdvice:Chance", 3);
+        _chance = configuration.GetValue<int>("DeathAdvice:Chance", 10);
         if (_chance < 1)
             _chance = 1;
     }

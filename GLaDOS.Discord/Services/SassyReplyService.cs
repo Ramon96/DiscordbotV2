@@ -1,5 +1,6 @@
 using Discord.WebSocket;
 using Glados.Discord.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace Glados.Discord.Services;
@@ -8,16 +9,20 @@ public class SassyReplyService : IHostedService
 {
     private readonly DiscordSocketClient _client;
     private readonly AIService _ai;
+    private readonly int _chance;
 
     private static readonly string SystemPrompt =
         "You are GLaDOS from Portal. Respond to the user's message with a sassy, condescending, " +
         "playfully dismissive one-liner. Be creative and specific — reference what they actually said. " +
         "Keep it under 2 sentences. No emojis. No roleplay asterisks. Just GLaDOS being GLaDOS.";
 
-    public SassyReplyService(DiscordSocketClient client, AIService ai)
+    public SassyReplyService(DiscordSocketClient client, AIService ai, IConfiguration configuration)
     {
         _client = client;
         _ai = ai;
+        _chance = configuration.GetValue<int>("SassyReply:Chance", 100);
+        if (_chance < 1)
+            _chance = 1;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -37,7 +42,7 @@ public class SassyReplyService : IHostedService
         if (message.Author.IsBot || message.Author.IsWebhook)
             return;
 
-        if (Random.Shared.Next(20) != 0)
+        if (Random.Shared.Next(_chance) != 0)
             return;
 
         var reply = await _ai.SendAsync(
