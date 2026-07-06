@@ -1,4 +1,5 @@
 import { authApi } from '../api'
+import { ApertureLogo, DiscordIcon } from '../components/Icons'
 
 export default function LoginPage() {
   const hadAuthError = new URLSearchParams(window.location.search).has('authError')
@@ -6,8 +7,9 @@ export default function LoginPage() {
   return (
     <div className="center">
       <div className="card login">
+        <ApertureLogo size={48} className="aperture" />
         <h1 className="brand">GLaDOS</h1>
-        <p className="muted">Sign in to view the dashboard</p>
+        <p className="muted">Sign in to view the control panel</p>
 
         {hadAuthError && (
           <p className="error">
@@ -16,7 +18,7 @@ export default function LoginPage() {
         )}
 
         <a className="discord-login" href={authApi.loginUrl}>
-          Continue with Discord
+          <DiscordIcon size={20} /> Continue with Discord
         </a>
       </div>
     </div>

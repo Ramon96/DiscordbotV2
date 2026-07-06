@@ -1,5 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { authApi, type CurrentUser } from '../api'
+import Sidebar from './Sidebar'
 
 export interface DashboardOutletContext {
   onLogout: () => void
@@ -22,46 +23,11 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
 
   return (
     <div className="shell">
-      <header className="topbar">
-        <span className="brand">GLaDOS Dashboard</span>
-        <nav className="nav">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-            Overview
-          </NavLink>
-          <NavLink to="/players" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Players
-          </NavLink>
-          <NavLink to="/jobs" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Jobs
-          </NavLink>
-          <NavLink to="/logs" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Logs
-          </NavLink>
-          <NavLink to="/changelog" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Changelog
-          </NavLink>
-        </nav>
-        <div className="spacer" />
-        <span className="user-chip">
-          {user.avatarUrl && (
-            <img
-              className="user-avatar"
-              src={user.avatarUrl}
-              alt=""
-              onError={(event) => {
-                event.currentTarget.style.display = 'none'
-              }}
-            />
-          )}
-          <span className="muted">{user.name}</span>
-        </span>
-        <button className="ghost" onClick={handleLogout}>
-          Log out
-        </button>
-      </header>
-
-      <main className="content wide">
-        <Outlet context={{ onLogout, user } satisfies DashboardOutletContext} />
+      <Sidebar user={user} onLogout={handleLogout} />
+      <main className="main">
+        <div className="main-inner">
+          <Outlet context={{ onLogout, user } satisfies DashboardOutletContext} />
+        </div>
       </main>
     </div>
   )

@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { ApiError, authApi, type CurrentUser } from './api'
 import LoginPage from './pages/Login'
 import DashboardLayout from './components/DashboardLayout'
+import OverviewPage from './pages/OverviewPage'
+import ServerPage from './pages/ServerPage'
 import MetricsPage from './pages/MetricsPage'
 import PlayersPage from './pages/PlayersPage'
 import PlayerDetailPage from './pages/PlayerDetailPage'
@@ -47,11 +49,14 @@ export default function App() {
         path="/"
         element={<DashboardLayout user={auth.user} onLogout={() => setAuth({ status: 'anon' })} />}
       >
-        <Route index element={<MetricsPage />} />
-        <Route path="players" element={<PlayersPage />} />
-        <Route path="players/:id" element={<PlayerDetailPage />} />
-        <Route path="jobs" element={<JobsPage />} />
-        <Route path="logs" element={<LogsPage />} />
+        <Route index element={<OverviewPage />} />
+        <Route path="runescape" element={<PlayersPage />} />
+        <Route path="runescape/:id" element={<PlayerDetailPage />} />
+        <Route path="server" element={<ServerPage />}>
+          <Route index element={<MetricsPage />} />
+          <Route path="jobs" element={<JobsPage />} />
+          <Route path="logs" element={<LogsPage />} />
+        </Route>
         <Route path="changelog" element={<ChangelogPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

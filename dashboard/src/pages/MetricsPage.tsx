@@ -6,6 +6,7 @@ import { usePolling } from '../hooks/usePolling'
 import { formatMb, formatPercent, formatUptime } from '../lib/format'
 import MetricCard from '../components/MetricCard'
 import MetricsCharts from '../components/MetricsCharts'
+import { ClockIcon, CpuIcon, MemoryIcon } from '../components/Icons'
 
 export default function MetricsPage() {
   const { onLogout } = useOutletContext<DashboardOutletContext>()
@@ -31,16 +32,19 @@ export default function MetricsPage() {
           label="Process CPU"
           value={formatPercent(current.process.cpuPercent)}
           sub="of total cores"
+          icon={<CpuIcon size={16} />}
         />
         <MetricCard
           label="Process memory"
           value={formatMb(current.process.workingSetMb)}
           sub={`heap ${formatMb(current.process.managedHeapMb)}`}
+          icon={<MemoryIcon size={16} />}
         />
         <MetricCard
           label="Uptime"
           value={formatUptime(current.process.uptimeSeconds)}
           sub={`${current.process.threadCount} threads`}
+          icon={<ClockIcon size={16} />}
         />
         {host ? (
           <>
@@ -48,6 +52,7 @@ export default function MetricsPage() {
               label="Host CPU"
               value={formatPercent(host.cpuPercent)}
               sub="whole machine"
+              icon={<CpuIcon size={16} />}
             />
             <MetricCard
               label="Host memory"
@@ -57,10 +62,11 @@ export default function MetricsPage() {
                   ? formatPercent((host.memoryUsedMb / host.memoryTotalMb) * 100)
                   : undefined
               }
+              icon={<MemoryIcon size={16} />}
             />
           </>
         ) : (
-          <MetricCard label="Host metrics" value="—" sub="Linux only" />
+          <MetricCard label="Host metrics" value="—" sub="Linux only" icon={<MemoryIcon size={16} />} />
         )}
       </section>
 
