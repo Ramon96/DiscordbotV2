@@ -81,7 +81,8 @@ public sealed class PostgresLogSink : ILogEventSink, IDisposable
         foreach (var logEvent in batch)
         {
             await writer.StartRowAsync();
-            await writer.WriteAsync(logEvent.Timestamp, NpgsqlDbType.TimestampTz);
+            // Serilog timestamps carry the local offset; timestamptz binary COPY requires UTC.
+            await writer.WriteAsync(logEvent.Timestamp.ToUniversalTime(), NpgsqlDbType.TimestampTz);
             await writer.WriteAsync(logEvent.Level.ToString(), NpgsqlDbType.Text);
             await writer.WriteAsync(logEvent.RenderMessage(), NpgsqlDbType.Text);
             await WriteNullableTextAsync(writer, logEvent.Exception?.ToString());
