@@ -46,7 +46,9 @@ public class JobsController : ControllerBase
     }
 
     [HttpPost("{id}/trigger")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(202)]
+    [ProducesResponseType(403)]
     [ProducesResponseType(404)]
     public IActionResult Trigger(string id)
     {

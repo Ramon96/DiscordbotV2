@@ -1,4 +1,8 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 
@@ -6,19 +10,20 @@ namespace GLaDOS.Scheduler.Application.Dashboard;
 
 public static class DashboardAuthExtensions
 {
-    public static IServiceCollection AddDashboardAuth(this IServiceCollection services)
+    public const string DiscordScheme = "Discord";
+    private const string AvatarClaim = "urn:discord:avatar";
+    private const string GlobalNameClaim = "urn:discord:global_name";
+
+    public static IServiceCollection AddDashboardAuth(this IServiceCollection services, IConfiguration configuration)
     {
         // Persist the Data Protection key ring to a mounted volume. Cookie auth encrypts the
         // cookie with these keys; without a stable key ring, every container recreation (each
-        // deploy) generates new keys and invalidates existing login cookies — logging everyone
-        // out on every deploy.
+        // deploy) generates new keys and invalidates existing login cookies.
         services.AddDataProtection()
             .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
             .SetApplicationName("glados-dashboard");
 
-        // TLS terminates at the nginx reverse proxy, so trust its forwarded scheme/ip
-        // headers; without this the app thinks every request is plain HTTP and refuses
-        // to send the Secure dashboard cookie.
+        // TLS terminates at the nginx reverse proxy, so trust its forwarded scheme/ip headers.
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -37,29 +42,67 @@ public static class DashboardAuthExtensions
                 options.ExpireTimeSpan = TimeSpan.FromDays(7);
                 options.SlidingExpiration = true;
 
-                // The SPA drives its own routing, so the API must answer with status codes
-                // rather than redirecting to a server-rendered login page.
-                options.Events.OnRedirectToLogin = context =>
+                // The SPA drives its own routing, so the API answers with status codes rather
+                // than redirecting to a server-rendered login page.
+                options.Events.OnRedirectToLogin = context => WriteStatus(context, StatusCodes.Status401Unauthorized);
+                options.Events.OnRedirectToAccessDenied = context => WriteStatus(context, StatusCodes.Status403Forbidden);
+            })
+            .AddOAuth(DiscordScheme, options =>
+            {
+                options.ClientId = configuration["Discord:ClientId"] ?? string.Empty;
+                options.ClientSecret = configuration["Discord:ClientSecret"] ?? string.Empty;
+                options.CallbackPath = "/api/auth/callback";
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
+                options.AuthorizationEndpoint = "https://discord.com/api/oauth2/authorize";
+                options.TokenEndpoint = "https://discord.com/api/oauth2/token";
+                options.UserInformationEndpoint = "https://discord.com/api/users/@me";
+
+                options.Scope.Add("identify");
+                options.Scope.Add("guilds");
+
+                var guildId = configuration["Discord:GuildId"];
+                var adminIds = (configuration["Dashboard:AdminDiscordIds"] ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                options.Events.OnCreatingTicket = async context =>
                 {
-                    if (context.Request.Path.StartsWithSegments("/api"))
+                    using var user = await GetJsonAsync(context, context.Options.UserInformationEndpoint!);
+                    var root = user.RootElement;
+                    var identity = context.Identity!;
+
+                    var discordId = root.GetProperty("id").GetString();
+                    if (discordId is not null)
                     {
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        return Task.CompletedTask;
+                        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, discordId));
+                    }
+                    AddStringClaim(identity, root, "username", ClaimTypes.Name);
+                    AddStringClaim(identity, root, "global_name", GlobalNameClaim);
+                    AddStringClaim(identity, root, "avatar", AvatarClaim);
+
+                    var isAdmin = discordId is not null && adminIds.Contains(discordId);
+                    var isMember = isAdmin || await IsGuildMemberAsync(context, guildId);
+                    if (!isMember)
+                    {
+                        context.Fail("You must be a member of the GLaDOS server to sign in.");
+                        return;
                     }
 
-                    context.Response.Redirect(context.RedirectUri);
+                    identity.AddClaim(new Claim(ClaimTypes.Role, isAdmin ? "Admin" : "Viewer"));
+                };
+
+                // Persist the cookie across browser restarts (survives for the scheme's ExpireTimeSpan).
+                options.Events.OnTicketReceived = context =>
+                {
+                    context.Properties!.IsPersistent = true;
                     return Task.CompletedTask;
                 };
 
-                options.Events.OnRedirectToAccessDenied = context =>
+                // Denied consent or non-member: send the SPA back to a friendly login screen.
+                options.Events.OnRemoteFailure = context =>
                 {
-                    if (context.Request.Path.StartsWithSegments("/api"))
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        return Task.CompletedTask;
-                    }
-
-                    context.Response.Redirect(context.RedirectUri);
+                    context.Response.Redirect("/dashboard/?authError=1");
+                    context.HandleResponse();
                     return Task.CompletedTask;
                 };
             });
@@ -67,5 +110,56 @@ public static class DashboardAuthExtensions
         services.AddAuthorization();
 
         return services;
+    }
+
+    private static Task WriteStatus(Microsoft.AspNetCore.Authentication.RedirectContext<CookieAuthenticationOptions> context, int statusCode)
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = statusCode;
+            return Task.CompletedTask;
+        }
+
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    }
+
+    private static void AddStringClaim(ClaimsIdentity identity, JsonElement root, string jsonKey, string claimType)
+    {
+        if (root.TryGetProperty(jsonKey, out var value) && value.ValueKind == JsonValueKind.String)
+        {
+            identity.AddClaim(new Claim(claimType, value.GetString()!));
+        }
+    }
+
+    private static async Task<JsonDocument> GetJsonAsync(OAuthCreatingTicketContext context, string url)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+        response.EnsureSuccessStatusCode();
+
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync(context.HttpContext.RequestAborted));
+    }
+
+    private static async Task<bool> IsGuildMemberAsync(OAuthCreatingTicketContext context, string? guildId)
+    {
+        if (string.IsNullOrEmpty(guildId))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var guilds = await GetJsonAsync(context, "https://discord.com/api/users/@me/guilds");
+            return guilds.RootElement.EnumerateArray()
+                .Any(guild => guild.TryGetProperty("id", out var id) && id.GetString() == guildId);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
