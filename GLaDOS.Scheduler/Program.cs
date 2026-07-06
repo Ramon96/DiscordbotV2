@@ -1,4 +1,5 @@
 using GLaDOS.Infra.EntityFramework;
+using GLaDOS.Infra.Logging;
 using GLaDOS.Scheduler.Application;
 using GLaDOS.Scheduler.Application.Hangfire;
 using GLaDOS.Scheduler.Application.OldschoolRunescape;
@@ -6,18 +7,36 @@ using GLaDOS.Scheduler.Application.OsrsFlipping;
 using GLaDOS.Scheduler.Application.OsrsFlipping.Clients;
 using GLaDOS.Scheduler.Application.Discord;
 using GLaDOS.Scheduler.Application.Discord.Clients;
+using GLaDOS.Scheduler.Application.Logging;
+using GLaDOS.Scheduler.Application.Dashboard;
+using GLaDOS.Scheduler.Application.Dashboard.Metrics;
 using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
 using Microsoft.EntityFrameworkCore;
 using Hangfire;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, loggerConfiguration) => loggerConfiguration
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Hangfire", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.Postgres(builder.Configuration.GetConnectionString("DefaultConnection")!));
 
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDashboardAuth();
+builder.Services.AddDashboardMetrics();
 
 builder.Services.AddCoreServices(builder.Configuration);
 
@@ -30,6 +49,7 @@ builder.Services.AddTransient<OsrsItemMappingJob>();
 builder.Services.AddTransient<StatsSnapshotJob>();
 builder.Services.AddTransient<HottieOfTheDayJob>();
 builder.Services.AddTransient<ShirtlessOldManJob>();
+builder.Services.AddTransient<LogRetentionJob>();
 
 builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
 {
@@ -60,12 +80,18 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
+app.UseForwardedHeaders();
+
 app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -80,6 +106,10 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
         }
     }
 );
+
+// Serve the React dashboard SPA (built into wwwroot/dashboard) and let it own client-side routing.
+app.MapGet("/dashboard", () => Results.Redirect("/dashboard/"));
+app.MapFallbackToFile("dashboard/{*path:nonfile}", "dashboard/index.html");
 
 
 // TODO: move job scheduling to a proper place (ex: HangfireJobScheduler.cs)
@@ -122,6 +152,11 @@ if (runRecurringJobs)
         job => job.ExecuteAsync(null, CancellationToken.None),
         "0 10 * * 1");
 
+    RecurringJob.AddOrUpdate<LogRetentionJob>(
+        "log-retention",
+        job => job.ExecuteAsync(null, CancellationToken.None),
+        Cron.Daily);
+
     BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
 }
 else
@@ -133,6 +168,7 @@ else
     RecurringJob.RemoveIfExists("stats-snapshot");
     RecurringJob.RemoveIfExists("hottie-of-the-day");
     RecurringJob.RemoveIfExists("shirtless-old-man");
+    RecurringJob.RemoveIfExists("log-retention");
 
 
     app.MapPost("/jobs/hiscore/trigger", (HttpContext _) =>

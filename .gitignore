@@ -63,3 +63,10 @@ nunit-*.xml
 .vscode/
 .idea/
 .idea
+
+# Claude Code local tooling config
+.claude/
+
+# Dashboard SPA (built inside Docker, never committed)
+dashboard/node_modules/
+dashboard/dist/
