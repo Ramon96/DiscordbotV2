@@ -13,6 +13,7 @@ import { ApiError, playersApi, type PlayerDetail } from '../api'
 import type { DashboardOutletContext } from '../components/DashboardLayout'
 import { formatCompact, formatDate } from '../lib/format'
 import { levelProgress, xpToNextLevel } from '../lib/osrs'
+import PlayerHistoryModal, { type HistorySelection } from '../components/PlayerHistoryModal'
 
 export default function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +21,7 @@ export default function PlayerDetailPage() {
   const [player, setPlayer] = useState<PlayerDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<'skills' | 'bosses'>('skills')
+  const [selected, setSelected] = useState<HistorySelection | null>(null)
 
   useEffect(() => {
     if (!id) {
@@ -132,7 +134,11 @@ export default function PlayerDetailPage() {
                 const toNext = xpToNextLevel(skill.level, skill.experience)
                 const progress = levelProgress(skill.level, skill.experience)
                 return (
-                  <div key={skill.skillId} className="skill">
+                  <div
+                    key={skill.skillId}
+                    className="skill clickable"
+                    onClick={() => setSelected({ kind: 'skill', name: skill.name })}
+                  >
                     <div className="skill-top">
                       <span className="skill-name">{skill.name}</span>
                       <span className="skill-level">{skill.level}</span>
@@ -157,7 +163,11 @@ export default function PlayerDetailPage() {
         ) : (
           <div className="skills-grid">
             {player.bosses.map((boss) => (
-              <div key={boss.activityId} className="skill">
+              <div
+                key={boss.activityId}
+                className="skill clickable"
+                onClick={() => setSelected({ kind: 'boss', name: boss.name })}
+              >
                 <div className="skill-top">
                   <span className="skill-name">{boss.name}</span>
                   <span className="skill-level">{boss.score.toLocaleString()}</span>
@@ -171,6 +181,15 @@ export default function PlayerDetailPage() {
           </div>
         )}
       </div>
+
+      {id && selected && (
+        <PlayerHistoryModal
+          playerId={id}
+          selection={selected}
+          onClose={() => setSelected(null)}
+          onUnauthorized={onLogout}
+        />
+      )}
     </div>
   )
 }

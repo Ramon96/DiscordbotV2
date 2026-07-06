@@ -167,9 +167,19 @@ export interface PlayerDetail {
   bosses: PlayerBoss[]
 }
 
+export interface BossPoint {
+  date: string
+  score: number
+  rank: number
+}
+
 export const playersApi = {
   list: () => request<PlayerSummary[]>('/api/players'),
   get: (id: string) => request<PlayerDetail>(`/api/players/${id}`),
+  skillHistory: (id: string, name: string) =>
+    request<XpPoint[]>(`/api/players/${id}/skill-history?name=${encodeURIComponent(name)}`),
+  bossHistory: (id: string, name: string) =>
+    request<BossPoint[]>(`/api/players/${id}/boss-history?name=${encodeURIComponent(name)}`),
 }
 
 export interface ChangelogEntry {
