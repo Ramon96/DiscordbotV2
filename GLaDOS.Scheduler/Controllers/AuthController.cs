@@ -37,9 +37,14 @@ public class AuthController : ControllerBase
             new[] { new Claim(ClaimTypes.Name, expectedUser) },
             CookieAuthenticationDefaults.AuthenticationScheme);
 
+        // IsPersistent makes the browser keep the cookie across restarts (for the scheme's
+        // ExpireTimeSpan); without it the cookie is a session cookie and login is lost on close.
+        var authProperties = new AuthenticationProperties { IsPersistent = true };
+
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(identity));
+            new ClaimsPrincipal(identity),
+            authProperties);
 
         return Ok(new CurrentUserResponse(expectedUser));
     }
