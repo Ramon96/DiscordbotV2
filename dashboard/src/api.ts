@@ -31,3 +31,32 @@ export const authApi = {
     }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
 }
+
+export interface ProcessMetrics {
+  cpuPercent: number
+  workingSetMb: number
+  managedHeapMb: number
+  threadCount: number
+  uptimeSeconds: number
+}
+
+export interface HostMetrics {
+  cpuPercent: number
+  memoryUsedMb: number
+  memoryTotalMb: number
+}
+
+export interface MetricsSnapshot {
+  timestamp: string
+  process: ProcessMetrics
+  host: HostMetrics | null
+}
+
+export interface MetricsResponse {
+  current: MetricsSnapshot | null
+  history: MetricsSnapshot[]
+}
+
+export const metricsApi = {
+  get: () => request<MetricsResponse>('/api/metrics'),
+}

@@ -7,6 +7,7 @@ using GLaDOS.Scheduler.Application.OsrsFlipping.Clients;
 using GLaDOS.Scheduler.Application.Discord;
 using GLaDOS.Scheduler.Application.Discord.Clients;
 using GLaDOS.Scheduler.Application.Dashboard;
+using GLaDOS.Scheduler.Application.Dashboard.Metrics;
 using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -21,6 +22,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDashboardAuth();
+builder.Services.AddDashboardMetrics();
 
 builder.Services.AddCoreServices(builder.Configuration);
 
