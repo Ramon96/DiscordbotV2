@@ -127,14 +127,27 @@ public class HiscoreJob : IHangfireJob
                 activity.Rank = change.NewRank;
             }
 
-            updates.Add((user, changes));
-
             _logger.LogInformation("Updated {StatCount} stats and {ActivityCount} activities for {Username}",
                 changes.StatChanges.Count, changes.ActivityChanges.Count, user.Username);
 
-            context.SetTextColor(ConsoleTextColor.Green);
-            context.WriteLine($"[Update] {user.Username}: +{changes.StatChanges.Count} stats.");
-            context.ResetTextColor();
+            // Persist every XP gain above, but only notify Discord on real level-ups (plus boss
+            // KC gains, as before) — otherwise maxed accounts would spam the channel each sync.
+            var notifiableChanges = new OldschoolRunescapeHiscoreChanges
+            {
+                StatChanges = changes.StatChanges
+                    .Where(change => change.NewLevel != change.OldLevel)
+                    .ToList(),
+                ActivityChanges = changes.ActivityChanges,
+            };
+
+            if (notifiableChanges.HasChanges)
+            {
+                updates.Add((user, notifiableChanges));
+
+                context.SetTextColor(ConsoleTextColor.Green);
+                context.WriteLine($"[Update] {user.Username}: {notifiableChanges.StatChanges.Count} level-up(s).");
+                context.ResetTextColor();
+            }
         }
 
         if (dbContext.ChangeTracker.HasChanges())
