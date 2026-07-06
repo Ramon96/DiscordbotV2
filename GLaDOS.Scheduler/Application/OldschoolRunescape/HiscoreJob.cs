@@ -102,6 +102,8 @@ public class HiscoreJob : IHangfireJob
                 continue;
             }
 
+            SeedMissingEntries(dbContext, user, freshData);
+
             var changes = _calculator.CalculateUpdates(user, freshData);
 
             if (!changes.HasChanges)
@@ -135,10 +137,10 @@ public class HiscoreJob : IHangfireJob
             context.ResetTextColor();
         }
 
-        if (updates.Any())
+        if (dbContext.ChangeTracker.HasChanges())
         {
             await dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Saved {Count} user updates to database", updates.Count);
+            _logger.LogInformation("Saved changes to database ({Count} users with notifiable updates)", updates.Count);
         }
 
         try
@@ -151,5 +153,52 @@ public class HiscoreJob : IHangfireJob
         }
 
         context.WriteLine("Completed hiscore job.");
+    }
+
+    private void SeedMissingEntries(ApplicationDbContext dbContext, OldschoolRunescapeUser user, OldschoolRunescapeHiscoreResponse freshData)
+    {
+        var missingStats = freshData.Skills
+            .Where(fresh => user.Stats!.All(existing => existing.Name != fresh.Name))
+            .Select(fresh => fresh.ToEntity(user.Id))
+            .ToList();
+
+        var missingActivities = freshData.Activities
+            .Where(fresh => user.Activities!.All(existing => existing.Name != fresh.Name))
+            .Select(fresh =>
+            {
+                var activity = fresh.ToEntity(user.Id);
+
+                // Baseline a newly added boss at 0 so its first sync reports the full
+                // jump (e.g. 0 -> 164) as a gain, letting players show off existing kills.
+                // Leave unranked (-1) entries as-is to avoid a bogus 0 -> -1 diff; they
+                // baseline naturally once the player crosses the hiscore threshold.
+                if (fresh.Score > 0)
+                {
+                    activity.Score = 0;
+                }
+
+                return activity;
+            })
+            .ToList();
+
+        if (missingStats.Count == 0 && missingActivities.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var stat in missingStats)
+        {
+            dbContext.Set<OldschoolRunescapeStat>().Add(stat);
+            user.Stats!.Add(stat);
+        }
+
+        foreach (var activity in missingActivities)
+        {
+            dbContext.Set<OldschoolRunescapeActivity>().Add(activity);
+            user.Activities!.Add(activity);
+        }
+
+        _logger.LogInformation("Seeded {StatCount} new stats and {ActivityCount} new activities as baselines for {Username}",
+            missingStats.Count, missingActivities.Count, user.Username);
     }
 }
