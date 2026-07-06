@@ -59,8 +59,8 @@ export default function PlayerDetailPage() {
   if (error) {
     return (
       <div className="player-detail">
-        <Link to="/players" className="player-link">
-          ← Players
+        <Link to="/runescape" className="back-link">
+          ← RuneScape
         </Link>
         <div className="card muted">{error}</div>
       </div>
@@ -80,8 +80,8 @@ export default function PlayerDetailPage() {
   return (
     <div className="player-detail">
       <div className="player-header">
-        <Link to="/players" className="player-link">
-          ← Players
+        <Link to="/runescape" className="back-link">
+          ← RuneScape
         </Link>
         <h2>{player.username}</h2>
         {overall && (
