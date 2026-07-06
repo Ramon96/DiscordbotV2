@@ -88,6 +88,19 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
+// Canonicalize the bare dashboard path to a trailing slash. Exact string match (not routing),
+// so it never matches "/dashboard/" and cannot create a redirect loop.
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.Equals("/dashboard", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/dashboard/");
+        return;
+    }
+
+    await next();
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
@@ -108,7 +121,8 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
 );
 
 // Serve the React dashboard SPA (built into wwwroot/dashboard) and let it own client-side routing.
-app.MapGet("/dashboard", () => Results.Redirect("/dashboard/"));
+// No MapGet redirect here: a routed "/dashboard" endpoint also matches "/dashboard/" and would
+// short-circuit static files into a self-redirect loop.
 app.MapFallbackToFile("dashboard/{*path:nonfile}", "dashboard/index.html");
 
 
