@@ -14,13 +14,14 @@ import type { DashboardOutletContext } from '../components/DashboardLayout'
 import { formatCompact, formatDate } from '../lib/format'
 import { levelProgress, xpToNextLevel } from '../lib/osrs'
 import PlayerHistoryModal, { type HistorySelection } from '../components/PlayerHistoryModal'
+import CollectionLogTab from '../components/CollectionLogTab'
 
 export default function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { onLogout } = useOutletContext<DashboardOutletContext>()
   const [player, setPlayer] = useState<PlayerDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [view, setView] = useState<'skills' | 'bosses'>('skills')
+  const [view, setView] = useState<'skills' | 'bosses' | 'collectionLog'>('skills')
   const [selected, setSelected] = useState<HistorySelection | null>(null)
 
   useEffect(() => {
@@ -124,9 +125,15 @@ export default function PlayerDetailPage() {
           <button className={view === 'bosses' ? 'active' : ''} onClick={() => setView('bosses')}>
             Bosses
           </button>
+          <button
+            className={view === 'collectionLog' ? 'active' : ''}
+            onClick={() => setView('collectionLog')}
+          >
+            Collection Log
+          </button>
         </div>
 
-        {view === 'skills' ? (
+        {view === 'skills' && (
           <div className="skills-grid">
             {player.skills
               .filter((skill) => skill.name !== 'Overall')
@@ -158,27 +165,34 @@ export default function PlayerDetailPage() {
                 )
               })}
           </div>
-        ) : player.bosses.length === 0 ? (
-          <p className="muted">No boss kills on the hiscores yet.</p>
-        ) : (
-          <div className="skills-grid">
-            {player.bosses.map((boss) => (
-              <div
-                key={boss.activityId}
-                className="skill clickable"
-                onClick={() => setSelected({ kind: 'boss', name: boss.name })}
-              >
-                <div className="skill-top">
-                  <span className="skill-name">{boss.name}</span>
-                  <span className="skill-level">{boss.score.toLocaleString()}</span>
+        )}
+
+        {view === 'bosses' &&
+          (player.bosses.length === 0 ? (
+            <p className="muted">No boss kills on the hiscores yet.</p>
+          ) : (
+            <div className="skills-grid">
+              {player.bosses.map((boss) => (
+                <div
+                  key={boss.activityId}
+                  className="skill clickable"
+                  onClick={() => setSelected({ kind: 'boss', name: boss.name })}
+                >
+                  <div className="skill-top">
+                    <span className="skill-name">{boss.name}</span>
+                    <span className="skill-level">{boss.score.toLocaleString()}</span>
+                  </div>
+                  <div className="skill-meta">
+                    <span className="muted">kills</span>
+                    <span className="muted">rank {boss.rank.toLocaleString()}</span>
+                  </div>
                 </div>
-                <div className="skill-meta">
-                  <span className="muted">kills</span>
-                  <span className="muted">rank {boss.rank.toLocaleString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ))}
+
+        {view === 'collectionLog' && id && (
+          <CollectionLogTab playerId={id} onUnauthorized={onLogout} />
         )}
       </div>
 

@@ -1,5 +1,7 @@
 using Glados.Discord.Commands;
 using GLaDOS.Domain.OldschoolRunescape;
+using GLaDOS.Domain.OsrsFlipping;
+using GLaDOS.Domain.OsrsWiki;
 using GLaDOS.Infra.EntityFramework;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -144,6 +146,34 @@ public class PlayersController : ControllerBase
 
         return Ok(history);
     }
+
+    [HttpGet("{id:guid}/collection-log")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> GetCollectionLog(Guid id, CancellationToken cancellationToken)
+    {
+        var itemIds = await _dbContext.Set<OsrsWikiCollectionLog>()
+            .Where(log => log.OldschoolRunescapeUserId == id)
+            .Select(log => log.ItemIds)
+            .FirstOrDefaultAsync(cancellationToken) ?? new List<int>();
+
+        if (itemIds.Count == 0)
+        {
+            return Ok(new CollectionLogResponse(0, Array.Empty<CollectionLogItem>()));
+        }
+
+        var names = await _dbContext.Set<OsrsItemMapping>()
+            .Where(mapping => itemIds.Contains(mapping.OsrsItemId))
+            .ToDictionaryAsync(mapping => mapping.OsrsItemId, mapping => mapping.Name, cancellationToken);
+
+        var items = itemIds
+            .Select(itemId => new CollectionLogItem(itemId, names.GetValueOrDefault(itemId)))
+            .OrderBy(item => item.Name is null)
+            .ThenBy(item => item.Name)
+            .ToList();
+
+        return Ok(new CollectionLogResponse(items.Count, items));
+    }
 }
 
 public record PlayerSummary(
@@ -168,3 +198,7 @@ public record PlayerDetail(
     IReadOnlyList<PlayerSkill> Skills,
     IReadOnlyList<XpPoint> XpHistory,
     IReadOnlyList<PlayerBoss> Bosses);
+
+public record CollectionLogItem(int ItemId, string? Name);
+
+public record CollectionLogResponse(int Count, IReadOnlyList<CollectionLogItem> Items);
