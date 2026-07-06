@@ -15,6 +15,8 @@ import { formatCompact, formatDate } from '../lib/format'
 import { levelProgress, xpToNextLevel } from '../lib/osrs'
 import PlayerHistoryModal, { type HistorySelection } from '../components/PlayerHistoryModal'
 import CollectionLogTab from '../components/CollectionLogTab'
+import TimeRangeButtons from '../components/TimeRangeButtons'
+import { filterByRange, type TimeRange } from '../lib/range'
 
 export default function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -23,6 +25,7 @@ export default function PlayerDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<'skills' | 'bosses' | 'collectionLog'>('skills')
   const [selected, setSelected] = useState<HistorySelection | null>(null)
+  const [range, setRange] = useState<TimeRange>('month')
 
   useEffect(() => {
     if (!id) {
@@ -69,7 +72,7 @@ export default function PlayerDetailPage() {
   }
 
   const overall = player.skills.find((skill) => skill.name === 'Overall')
-  const chartData = player.xpHistory.map((point) => ({
+  const chartData = filterByRange(player.xpHistory, range).map((point) => ({
     date: formatDate(point.date),
     xp: point.experience,
   }))
@@ -89,15 +92,19 @@ export default function PlayerDetailPage() {
       </div>
 
       <div className="card chart">
-        <h3>Total XP over time</h3>
+        <div className="chart-header">
+          <h3>Total XP over time</h3>
+          <TimeRangeButtons value={range} onChange={setRange} />
+        </div>
         {chartData.length < 2 ? (
-          <p className="muted">Not enough history yet — snapshots are captured daily.</p>
+          <p className="muted">Not enough history in this range yet — snapshots are captured daily.</p>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fill: 'var(--muted)', fontSize: 11 }} minTickGap={30} />
               <YAxis
+                domain={['auto', 'auto']}
                 tick={{ fill: 'var(--muted)', fontSize: 11 }}
                 width={48}
                 tickFormatter={(value) => formatCompact(value as number)}
