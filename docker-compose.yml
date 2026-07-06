@@ -46,6 +46,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
+      - dpkeys:/keys
       - /root/DiscordbotV2:/repo:rw
       - /root/DiscordbotV2/.env:/repo/.env:ro
       - /root/DiscordbotV2/docker-compose.yml:/repo/docker-compose.yml:ro
@@ -57,6 +58,7 @@ services:
 
 volumes:
   pgdata:
+  dpkeys:
 
 networks:
   glados_network:
