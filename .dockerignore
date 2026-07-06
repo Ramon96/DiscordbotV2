@@ -1,0 +1,6 @@
+**/bin/
+**/obj/
+dashboard/node_modules/
+dashboard/dist/
+.git/
+.env

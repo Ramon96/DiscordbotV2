@@ -21,6 +21,13 @@ FROM build AS publish-scheduler
 WORKDIR "/src/GLaDOS.Scheduler"
 RUN dotnet publish "GLaDOS.Scheduler.csproj" -c Release -o /app/publish/scheduler
 
+FROM node:20-alpine AS build-dashboard
+WORKDIR /dashboard
+COPY dashboard/package*.json ./
+RUN npm ci
+COPY dashboard/ ./
+RUN npm run build
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final-discord
 WORKDIR /app
 # libopus-dev + libsodium-dev provide the unversioned libopus.so / libsodium.so symlinks that
@@ -35,6 +42,7 @@ ENTRYPOINT ["dotnet", "GLaDOS.Discord.dll"]
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS final-scheduler
 WORKDIR /app
 COPY --from=publish-scheduler /app/publish/scheduler .
+COPY --from=build-dashboard /dashboard/dist ./wwwroot/dashboard
 
 RUN apt-get update && \
     apt-get install -y curl git libopus-dev libsodium-dev && \

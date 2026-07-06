@@ -6,6 +6,7 @@ using GLaDOS.Scheduler.Application.OsrsFlipping;
 using GLaDOS.Scheduler.Application.OsrsFlipping.Clients;
 using GLaDOS.Scheduler.Application.Discord;
 using GLaDOS.Scheduler.Application.Discord.Clients;
+using GLaDOS.Scheduler.Application.Dashboard;
 using GLaDOS.Scheduler.Application.Swagger;
 using GLaDOS.Scheduler.Extensions;
 using GLaDOS.Scheduler.ServiceCollection;
@@ -18,6 +19,8 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDashboardAuth();
 
 builder.Services.AddCoreServices(builder.Configuration);
 
@@ -60,12 +63,18 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
+app.UseForwardedHeaders();
+
 app.UseMiddleware<SwaggerBasicAuthMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -80,6 +89,10 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
         }
     }
 );
+
+// Serve the React dashboard SPA (built into wwwroot/dashboard) and let it own client-side routing.
+app.MapGet("/dashboard", () => Results.Redirect("/dashboard/"));
+app.MapFallbackToFile("dashboard/{*path:nonfile}", "dashboard/index.html");
 
 
 // TODO: move job scheduling to a proper place (ex: HangfireJobScheduler.cs)
