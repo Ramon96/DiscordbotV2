@@ -36,6 +36,9 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
           <NavLink to="/logs" className={({ isActive }) => (isActive ? 'active' : '')}>
             Logs
           </NavLink>
+          <NavLink to="/changelog" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Changelog
+          </NavLink>
         </nav>
         <div className="spacer" />
         <span className="muted">{user.username}</span>

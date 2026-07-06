@@ -8,6 +8,7 @@ import PlayersPage from './pages/PlayersPage'
 import PlayerDetailPage from './pages/PlayerDetailPage'
 import JobsPage from './pages/JobsPage'
 import LogsPage from './pages/LogsPage'
+import ChangelogPage from './pages/ChangelogPage'
 
 type AuthState =
   | { status: 'loading' }
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="players/:id" element={<PlayerDetailPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="logs" element={<LogsPage />} />
+        <Route path="changelog" element={<ChangelogPage />} />
       </Route>
     </Routes>
   )

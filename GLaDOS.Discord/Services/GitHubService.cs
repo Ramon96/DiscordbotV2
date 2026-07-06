@@ -6,7 +6,11 @@ namespace Glados.Discord.Services;
 
 public partial class GitHubService
 {
+    private static readonly TimeSpan ChangelogCacheTtl = TimeSpan.FromMinutes(10);
+
     private readonly IConfiguration _configuration;
+    private readonly object _changelogLock = new();
+    private (DateTimeOffset FetchedAt, IReadOnlyList<ChangelogEntry> Entries)? _changelogCache;
 
     public GitHubService(IConfiguration configuration)
     {
@@ -116,6 +120,57 @@ public partial class GitHubService
         await client.Issue.Comment.Create(owner, repo, prNumber, comment);
     }
 
+    public async Task<IReadOnlyList<ChangelogEntry>> GetRecentMergedPullRequestsAsync(
+        int count = 50,
+        CancellationToken ct = default)
+    {
+        lock (_changelogLock)
+        {
+            if (_changelogCache is { } cache && DateTimeOffset.UtcNow - cache.FetchedAt < ChangelogCacheTtl)
+            {
+                return cache.Entries;
+            }
+        }
+
+        var creds = GetCredentials();
+
+        var client = new GitHubClient(new ProductHeaderValue("GLADOS-Dashboard"));
+        if (creds.Configured)
+        {
+            client.Credentials = new Credentials(creds.Token);
+        }
+
+        var pulls = await client.PullRequest.GetAllForRepository(
+            creds.Owner,
+            creds.Repo,
+            new PullRequestRequest
+            {
+                State = ItemStateFilter.Closed,
+                SortProperty = PullRequestSort.Updated,
+                SortDirection = SortDirection.Descending,
+            },
+            new ApiOptions { PageSize = 100, PageCount = 1 });
+
+        var entries = pulls
+            .Where(pull => pull.MergedAt.HasValue)
+            .OrderByDescending(pull => pull.MergedAt)
+            .Take(count)
+            .Select(pull => new ChangelogEntry(
+                pull.Number,
+                pull.Title,
+                pull.MergedAt!.Value,
+                pull.User?.Login ?? "unknown",
+                pull.HtmlUrl))
+            .ToList();
+
+        lock (_changelogLock)
+        {
+            _changelogCache = (DateTimeOffset.UtcNow, entries);
+        }
+
+        return entries;
+    }
+
     public static string SanitizeBranchName(string description)
     {
         var slug = BranchSanitizeRegex().Replace(description.ToLowerInvariant(), "");
@@ -134,3 +189,5 @@ public partial class GitHubService
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
 }
+
+public record ChangelogEntry(int Number, string Title, DateTimeOffset MergedAt, string Author, string Url);
