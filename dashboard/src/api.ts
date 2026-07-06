@@ -128,3 +128,38 @@ export const jobsApi = {
 export const statsApi = {
   get: () => request<StatsResponse>('/api/stats'),
 }
+
+export interface PlayerSummary {
+  userId: string
+  username: string
+  totalLevel: number
+  totalXp: number
+  rank: number
+  weeklyXpGain: number | null
+}
+
+export interface PlayerSkill {
+  skillId: number
+  name: string
+  level: number
+  experience: number
+  rank: number
+}
+
+export interface XpPoint {
+  date: string
+  experience: number
+  level: number
+}
+
+export interface PlayerDetail {
+  userId: string
+  username: string
+  skills: PlayerSkill[]
+  xpHistory: XpPoint[]
+}
+
+export const playersApi = {
+  list: () => request<PlayerSummary[]>('/api/players'),
+  get: (id: string) => request<PlayerDetail>(`/api/players/${id}`),
+}

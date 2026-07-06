@@ -50,6 +50,19 @@ export function formatRelative(iso: string | null | undefined): string {
   return diffMs > 0 ? `in ${value}` : `${value} ago`
 }
 
+const compactFormatter = new Intl.NumberFormat('en', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+
+export function formatCompact(value: number): string {
+  return compactFormatter.format(value)
+}
+
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
+
 function describeDuration(seconds: number): string {
   if (seconds < 45) {
     return 'now'

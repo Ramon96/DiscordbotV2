@@ -4,6 +4,8 @@ import { ApiError, authApi, type CurrentUser } from './api'
 import LoginPage from './pages/Login'
 import DashboardLayout from './components/DashboardLayout'
 import MetricsPage from './pages/MetricsPage'
+import PlayersPage from './pages/PlayersPage'
+import PlayerDetailPage from './pages/PlayerDetailPage'
 import JobsPage from './pages/JobsPage'
 import LogsPage from './pages/LogsPage'
 
@@ -54,6 +56,8 @@ export default function App() {
         }
       >
         <Route index element={<MetricsPage />} />
+        <Route path="players" element={<PlayersPage />} />
+        <Route path="players/:id" element={<PlayerDetailPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="logs" element={<LogsPage />} />
       </Route>
