@@ -25,6 +25,7 @@ builder.Host.UseSerilog((context, loggerConfiguration) => loggerConfiguration
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("System.Net.Http", LogEventLevel.Warning)
     .MinimumLevel.Override("Hangfire", LogEventLevel.Warning)
     .Enrich.FromLogContext()
     .WriteTo.Console()

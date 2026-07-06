@@ -27,6 +27,9 @@ export default function DashboardLayout({ user, onLogout }: DashboardLayoutProps
           <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
             Overview
           </NavLink>
+          <NavLink to="/jobs" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Jobs
+          </NavLink>
           <NavLink to="/logs" className={({ isActive }) => (isActive ? 'active' : '')}>
             Logs
           </NavLink>

@@ -19,7 +19,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(response.status)
   }
 
-  return (response.status === 204 ? undefined : await response.json()) as T
+  const text = await response.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }
 
 export const authApi = {
@@ -88,4 +89,42 @@ export const logsApi = {
     params.set('limit', String(query.limit ?? 200))
     return request<LogEntry[]>(`/api/logs?${params.toString()}`)
   },
+}
+
+export interface JobStatistics {
+  succeeded: number
+  failed: number
+  processing: number
+  enqueued: number
+  scheduled: number
+}
+
+export interface RecurringJobSummary {
+  id: string
+  cron: string | null
+  lastExecution: string | null
+  nextExecution: string | null
+  lastJobState: string | null
+}
+
+export interface JobsResponse {
+  statistics: JobStatistics
+  recurring: RecurringJobSummary[]
+}
+
+export interface StatsResponse {
+  trackedUsers: number
+  priceSnapshots: number
+  logEntries: number
+  latestPriceAt: string | null
+}
+
+export const jobsApi = {
+  get: () => request<JobsResponse>('/api/jobs'),
+  trigger: (id: string) =>
+    request<void>(`/api/jobs/${encodeURIComponent(id)}/trigger`, { method: 'POST' }),
+}
+
+export const statsApi = {
+  get: () => request<StatsResponse>('/api/stats'),
 }
