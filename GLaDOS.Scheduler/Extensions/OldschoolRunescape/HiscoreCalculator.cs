@@ -12,7 +12,9 @@ public class HiscoreCalculator
         foreach (var freshStat in freshData.Skills)
         {
             var existingStat = user.Stats!.FirstOrDefault(s => s.Name == freshStat.Name);
-            if (existingStat != null && existingStat.Level != freshStat.Level)
+            // Track any XP gain, not just level-ups, so progress is captured for maxed skills too.
+            if (existingStat != null &&
+                (existingStat.Level != freshStat.Level || existingStat.Experience != freshStat.Xp))
             {
                 changes.StatChanges.Add(new StatChange
                 {
