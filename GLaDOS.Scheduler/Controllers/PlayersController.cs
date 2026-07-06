@@ -116,6 +116,34 @@ public class PlayersController : ControllerBase
 
         return Ok(new PlayerDetail(id, username, skills, xpHistory, bosses));
     }
+
+    [HttpGet("{id:guid}/skill-history")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> GetSkillHistory(Guid id, [FromQuery] string name, CancellationToken cancellationToken)
+    {
+        var history = await _dbContext.Set<OldschoolRunescapeStatsSnapshot>()
+            .Where(snapshot => snapshot.OldschoolRunescapeUserId == id && snapshot.Name == name)
+            .OrderBy(snapshot => snapshot.SnapshotDate)
+            .Select(snapshot => new XpPoint(snapshot.SnapshotDate, snapshot.Experience, snapshot.Level))
+            .ToListAsync(cancellationToken);
+
+        return Ok(history);
+    }
+
+    [HttpGet("{id:guid}/boss-history")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> GetBossHistory(Guid id, [FromQuery] string name, CancellationToken cancellationToken)
+    {
+        var history = await _dbContext.Set<OldschoolRunescapeActivitySnapshot>()
+            .Where(snapshot => snapshot.OldschoolRunescapeUserId == id && snapshot.Name == name)
+            .OrderBy(snapshot => snapshot.SnapshotDate)
+            .Select(snapshot => new BossPoint(snapshot.SnapshotDate, snapshot.Score, snapshot.Rank))
+            .ToListAsync(cancellationToken);
+
+        return Ok(history);
+    }
 }
 
 public record PlayerSummary(
@@ -129,6 +157,8 @@ public record PlayerSummary(
 public record PlayerSkill(uint SkillId, string Name, int Level, long Experience, int Rank);
 
 public record XpPoint(DateTime Date, long Experience, int Level);
+
+public record BossPoint(DateTime Date, int Score, int Rank);
 
 public record PlayerBoss(uint ActivityId, string Name, int Score, int Rank);
 
