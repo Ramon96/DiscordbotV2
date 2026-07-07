@@ -17,6 +17,10 @@ public class OsrsPriceSnapshotConfig : EntityConfig<OsrsPriceSnapshot>
 
         builder.HasIndex(e => new { e.OsrsItemId, e.Timestamp });
 
+        // Supports "latest snapshot" lookups (ORDER BY Timestamp DESC) on the dashboard, which the
+        // composite index above can't serve because it leads with OsrsItemId.
+        builder.HasIndex(e => e.Timestamp);
+
         builder.Property(e => e.AvgBuyPrice)
             .IsRequired();
 
