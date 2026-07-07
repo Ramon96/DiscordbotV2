@@ -1,30 +1,55 @@
+/* =====================================================================
+   Aperture Science Enrichment Center — control panel theme
+   Signature palette: GLaDOS test-chamber black, Aperture orange primary,
+   portal blue secondary, hazard-stripe accents, technical mono type.
+   ===================================================================== */
+
 :root {
-  --bg: #0b0d12;
-  --bg-glow: radial-gradient(1200px 600px at 100% -10%, rgba(91, 140, 255, 0.08), transparent 60%);
-  --surface: #14171f;
-  --surface-2: #1a1e28;
-  --surface-3: #20252f;
-  --border: #262b36;
-  --border-strong: #333a48;
-  --text: #e7e9ee;
-  --muted: #99a1b1;
-  --faint: #6b7280;
-  --accent: #5b8cff;
-  --accent-strong: #6f9bff;
-  --accent-soft: rgba(91, 140, 255, 0.13);
+  --bg: #08090c;
+  --bg-panel: #0c0e13;
+  /* Dual-portal ambient glow: orange top-right, blue bottom-left. */
+  --bg-glow:
+    radial-gradient(1100px 620px at 100% -12%, rgba(255, 150, 38, 0.09), transparent 62%),
+    radial-gradient(1000px 640px at -8% 108%, rgba(56, 178, 255, 0.07), transparent 60%);
+  --surface: #101319;
+  --surface-2: #161a22;
+  --surface-3: #1d222c;
+  --border: #242a35;
+  --border-strong: #38414f;
+  --text: #eef1f5;
+  --muted: #99a2b2;
+  --faint: #66707f;
+
+  /* Aperture orange — the primary. */
+  --accent: #ff9e2c;
+  --accent-strong: #ffb452;
+  --accent-soft: rgba(255, 158, 44, 0.14);
+  --accent-glow: rgba(255, 158, 44, 0.45);
+
+  /* Portal blue — the secondary. */
+  --portal: #38b6ff;
+  --portal-strong: #62c6ff;
+  --portal-soft: rgba(56, 182, 255, 0.14);
+
+  /* Hazard stripe yellow. */
+  --hazard: #f5c400;
+
   --success: #43d17f;
   --success-soft: rgba(67, 209, 127, 0.13);
   --warning: #f5c451;
   --error: #ff6b6b;
 
-  --radius: 14px;
-  --radius-sm: 9px;
-  --radius-xs: 6px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 5px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 14px 34px -18px rgba(0, 0, 0, 0.7);
   --sidebar-w: 250px;
 
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
   color-scheme: dark;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -42,6 +67,23 @@ body {
   line-height: 1.5;
 }
 
+/* Faint CRT scanline wash — the Enrichment Center is watching. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.014) 0px,
+    rgba(255, 255, 255, 0.014) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+}
+
 h1,
 h2,
 h3 {
@@ -50,6 +92,41 @@ h3 {
 
 a {
   color: var(--accent);
+}
+
+/* ---------- Aperture signature primitives ---------- */
+
+/* Hazard warning stripes — used as accent bars / dividers. */
+.hazard-stripe {
+  height: 6px;
+  border-radius: 999px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--hazard) 0px,
+    var(--hazard) 9px,
+    #14161c 9px,
+    #14161c 18px
+  );
+  opacity: 0.85;
+}
+
+/* The rotating aperture iris. */
+.aperture {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+@keyframes aperture-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero .aperture,
+  .login .aperture {
+    animation: aperture-spin 26s linear infinite;
+  }
 }
 
 .center {
@@ -78,22 +155,38 @@ a {
 }
 
 .mono {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-family: var(--font-mono);
 }
 
 .brand {
+  font-family: var(--font-mono);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 /* ---------- Cards & primitives ---------- */
 
 .card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.5rem;
   box-shadow: var(--shadow);
+}
+
+/* Thin orange rail on the leading edge of every panel — test-chamber trim. */
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(var(--accent), transparent);
+  opacity: 0.55;
 }
 
 .card h2 {
@@ -108,14 +201,18 @@ button {
   border: none;
   border-radius: var(--radius-sm);
   padding: 0.6rem 0.9rem;
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  box-shadow: 0 0 0 0 var(--accent-glow);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 button:hover:not(:disabled) {
   background: var(--accent-strong);
+  box-shadow: 0 0 16px -2px var(--accent-glow);
 }
 
 button:disabled {
@@ -160,23 +257,51 @@ select:focus {
 /* ---------- Login ---------- */
 
 .login {
-  width: min(380px, 100%);
+  position: relative;
+  width: min(390px, 100%);
   display: flex;
   flex-direction: column;
   gap: 1rem;
   align-items: center;
   text-align: center;
-  padding: 2.25rem;
+  padding: 2.5rem 2.25rem;
+  overflow: hidden;
+}
+
+/* Hazard trim across the top of the login panel. */
+.login::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 5px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--hazard) 0px,
+    var(--hazard) 9px,
+    #14161c 9px,
+    #14161c 18px
+  );
+  opacity: 0.85;
 }
 
 .login .aperture {
-  color: var(--accent);
   margin-bottom: 0.25rem;
 }
 
 .login h1 {
   margin: 0;
-  font-size: 1.7rem;
+  font-size: 1.6rem;
+}
+
+.login .login-sub {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: -0.5rem 0 0;
 }
 
 .login p {
@@ -218,9 +343,9 @@ select:focus {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.1rem;
   padding: 1.25rem 0.85rem;
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--bg-panel), var(--surface));
   border-right: 1px solid var(--border);
 }
 
@@ -232,24 +357,44 @@ select:focus {
 }
 
 .sidebar-brand .aperture {
-  color: var(--accent);
   flex-shrink: 0;
 }
 
 .sidebar-brand-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .sidebar-brand-text strong {
-  font-size: 1rem;
-  letter-spacing: 0.02em;
+  font-family: var(--font-mono);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .sidebar-brand-text span {
-  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--faint);
+}
+
+/* Hazard divider beneath the brand block. */
+.sidebar-rule {
+  height: 5px;
+  margin: 0 0.35rem;
+  border-radius: 999px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--hazard) 0px,
+    var(--hazard) 8px,
+    #14161c 8px,
+    #14161c 16px
+  );
+  opacity: 0.55;
 }
 
 .sidebar-nav {
@@ -267,15 +412,17 @@ select:focus {
 }
 
 .sidebar-group-label {
-  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   color: var(--faint);
   padding: 0.2rem 0.6rem 0.35rem;
 }
 
 .side-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -283,7 +430,7 @@ select:focus {
   border-radius: var(--radius-sm);
   color: var(--muted);
   text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 500;
   transition: background 0.12s ease, color 0.12s ease;
 }
@@ -296,6 +443,20 @@ select:focus {
 .side-link.active {
   background: var(--accent-soft);
   color: var(--accent-strong);
+}
+
+/* Illuminated indicator bar on the active chamber. */
+.side-link.active::before {
+  content: "";
+  position: absolute;
+  left: -0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .side-link svg {
@@ -350,10 +511,11 @@ select:focus {
 
 .role-pill {
   display: inline-block;
-  font-size: 0.66rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
 }
@@ -398,8 +560,9 @@ select:focus {
 
 .page-header h1 {
   margin: 0;
-  font-size: 1.55rem;
-  letter-spacing: -0.01em;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .page-header p {
@@ -426,7 +589,10 @@ select:focus {
   color: var(--muted);
   text-decoration: none;
   padding: 0.55rem 0.9rem;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   font-weight: 500;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -466,18 +632,22 @@ select:focus {
 
 .metric-top svg {
   color: var(--accent);
+  filter: drop-shadow(0 0 5px var(--accent-glow));
 }
 
 .metric-label {
-  font-size: 0.76rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.14em;
 }
 
 .metric-value {
+  font-family: var(--font-mono);
   font-size: 1.7rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .metric-sub {
@@ -485,30 +655,60 @@ select:focus {
   font-size: 0.8rem;
 }
 
+/* Metric tiles glow on hover like an active readout. */
+.card.metric {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card.metric:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow), 0 0 24px -14px var(--accent-glow);
+}
+
 /* ---------- Overview landing ---------- */
 
 .hero {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 1.1rem;
-  padding: 1.6rem 1.75rem;
+  gap: 1.3rem;
+  padding: 1.7rem 1.85rem;
   margin-bottom: 1.5rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
+  overflow: hidden;
   background:
-    radial-gradient(600px 200px at 0% 0%, var(--accent-soft), transparent 70%),
+    radial-gradient(560px 220px at 0% 0%, var(--accent-soft), transparent 70%),
+    radial-gradient(520px 220px at 100% 120%, var(--portal-soft), transparent 70%),
     var(--surface);
   box-shadow: var(--shadow);
 }
 
+/* Hazard trim down the trailing edge of the hero banner. */
+.hero::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 5px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--hazard) 0px,
+    var(--hazard) 9px,
+    #14161c 9px,
+    #14161c 18px
+  );
+  opacity: 0.6;
+}
+
 .hero .aperture {
-  color: var(--accent);
   flex-shrink: 0;
 }
 
 .hero h1 {
   margin: 0 0 0.2rem;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
 }
 
 .hero p {
@@ -518,12 +718,24 @@ select:focus {
 }
 
 .section-title {
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.16em;
   color: var(--faint);
   margin: 1.75rem 0 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* Trailing rule after a section heading. */
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-strong), transparent);
 }
 
 .shortcut-grid {
@@ -554,8 +766,14 @@ select:focus {
   height: 42px;
   border-radius: var(--radius-sm);
   background: var(--accent-soft);
+  border: 1px solid rgba(255, 158, 44, 0.25);
   color: var(--accent-strong);
   flex-shrink: 0;
+  transition: box-shadow 0.15s ease;
+}
+
+.shortcut:hover .shortcut-icon {
+  box-shadow: 0 0 16px -3px var(--accent-glow);
 }
 
 .shortcut-body strong {
@@ -599,12 +817,13 @@ select:focus {
 .players-table th {
   text-align: left;
   color: var(--muted);
+  font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
   padding: 0.7rem 0.95rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .data-table td,
@@ -714,8 +933,11 @@ select:focus {
   display: inline-block;
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   border: 1px solid var(--border-strong);
   color: var(--muted);
 }
@@ -815,8 +1037,16 @@ select:focus {
   color: var(--muted);
   padding: 0.24rem 0.62rem;
   border-radius: var(--radius-xs);
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   font-weight: 500;
+  letter-spacing: 0.03em;
+  box-shadow: none;
+}
+
+.range-buttons button:hover:not(:disabled) {
+  box-shadow: none;
+  color: var(--text);
 }
 
 .range-buttons button.active {
@@ -925,8 +1155,16 @@ select:focus {
   color: var(--muted);
   padding: 0.4rem 0.95rem;
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
   font-weight: 500;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+
+.tab-toggle button:hover:not(:disabled) {
+  box-shadow: none;
+  color: var(--text);
 }
 
 .tab-toggle button.active {

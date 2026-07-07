@@ -60,9 +60,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
         <ApertureLogo size={30} className="aperture" />
         <span className="sidebar-brand-text">
           <strong>GLaDOS</strong>
-          <span>Control panel</span>
+          <span>Enrichment Center</span>
         </span>
       </div>
+      <div className="sidebar-rule" />
 
       <nav className="sidebar-nav">
         <NavGroup label="Main" items={mainNav} />
