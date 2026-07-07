@@ -34,8 +34,8 @@ export default function OverviewPage() {
       <section className="hero">
         <ApertureLogo size={52} className="aperture" />
         <div>
-          <h1>Welcome back, {user.name.split(/\s+/)[0]}.</h1>
-          <p>Your window into GLaDOS — the clan hiscores, the server, and everything she's been up to.</p>
+          <h1>Welcome back to the Enrichment Center, {user.name.split(/\s+/)[0]}.</h1>
+          <p>Your window into GLaDOS — the clan hiscores, the server, and everything she's been up to. For science.</p>
         </div>
       </section>
 

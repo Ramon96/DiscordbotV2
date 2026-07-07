@@ -9,7 +9,8 @@ export default function LoginPage() {
       <div className="card login">
         <ApertureLogo size={48} className="aperture" />
         <h1 className="brand">GLaDOS</h1>
-        <p className="muted">Sign in to view the control panel</p>
+        <p className="login-sub">Aperture Science</p>
+        <p className="muted">Authenticate to enter the Enrichment Center</p>
 
         {hadAuthError && (
           <p className="error">
