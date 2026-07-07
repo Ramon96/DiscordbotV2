@@ -22,7 +22,7 @@ public class OsrsCorrectFuckupCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Remove the most recently recorded fuckup (for correcting double-counts).")
+            .WithDescription("Undo the most recently recorded OSRS fuckup (fixes a double-count).")
             .Build();
     }
 

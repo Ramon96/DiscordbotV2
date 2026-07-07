@@ -22,7 +22,7 @@ public class OsrsFuckupCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Record that OSRS made a fuckup. +1 to the counter.")
+            .WithDescription("Record a new OSRS fuckup, adding one to the tracker.")
             .Build();
     }
 

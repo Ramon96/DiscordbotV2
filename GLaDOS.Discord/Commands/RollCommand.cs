@@ -11,7 +11,7 @@ public class RollCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Roll a random number between 1 and 100")
+            .WithDescription("Roll a random number between 1 and 100.")
             .Build();
     }
 

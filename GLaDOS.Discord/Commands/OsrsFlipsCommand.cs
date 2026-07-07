@@ -30,7 +30,7 @@ public class OsrsFlipsCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Get top OSRS Grand Exchange flipping opportunities with AI analysis")
+            .WithDescription("Get the top OSRS Grand Exchange flipping opportunities, with AI analysis.")
             .AddOption("limit", ApplicationCommandOptionType.Integer, "Number of opportunities (1-10, default: 5)", isRequired: false)
             .AddOption("min-profit", ApplicationCommandOptionType.Integer, "Minimum net profit in gp (default: 0)", isRequired: false)
             .AddOption("min-volume", ApplicationCommandOptionType.Integer, "Minimum 24h volume (default: 0)", isRequired: false)
