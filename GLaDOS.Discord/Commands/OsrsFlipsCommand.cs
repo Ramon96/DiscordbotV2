@@ -11,6 +11,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Glados.Discord.Commands;
 
+// Deprecated: OSRS Grand Exchange flipping is unused (ironman-focused server) and its price feed
+// wrote ~1.1M snapshot rows/day. Kept intact so it can be revived by removing [DeprecatedCommand]
+// and re-enabling the fetch-osrs-prices job in Program.cs.
+[DeprecatedCommand]
 public class OsrsFlipsCommand : IDiscordCommand
 {
     private readonly IServiceProvider _services;

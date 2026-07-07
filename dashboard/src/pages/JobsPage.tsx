@@ -95,9 +95,7 @@ export default function JobsPage() {
       {stats && (
         <section className="metric-grid">
           <MetricCard label="Tracked OSRS users" value={stats.trackedUsers.toLocaleString()} />
-          <MetricCard label="Price snapshots" value={stats.priceSnapshots.toLocaleString()} />
           <MetricCard label="Log entries" value={stats.logEntries.toLocaleString()} />
-          <MetricCard label="Prices updated" value={formatRelative(stats.latestPriceAt)} />
         </section>
       )}
     </div>

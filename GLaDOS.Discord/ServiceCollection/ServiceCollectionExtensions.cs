@@ -36,7 +36,9 @@ public static class ServiceCollectionExtensions
 
         var commandType = typeof(IDiscordCommand);
         var commandTypes = Assembly.GetExecutingAssembly().GetTypes()
-            .Where(t => t is { IsAbstract: false, IsInterface: false } && commandType.IsAssignableFrom(t))
+            .Where(t => t is { IsAbstract: false, IsInterface: false }
+                        && commandType.IsAssignableFrom(t)
+                        && t.GetCustomAttribute<DeprecatedCommandAttribute>() is null)
             .ToList();
 
         Console.WriteLine($"Auto-discovering IDiscordCommand implementations...");

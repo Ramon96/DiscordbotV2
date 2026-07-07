@@ -3,7 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom'
 import { ApiError, metricsApi, statsApi } from '../api'
 import type { DashboardOutletContext } from '../components/DashboardLayout'
 import { usePolling } from '../hooks/usePolling'
-import { formatCompact, formatRelative, formatUptime } from '../lib/format'
+import { formatCompact, formatUptime } from '../lib/format'
 import MetricCard from '../components/MetricCard'
 import {
   ApertureLogo,
@@ -45,12 +45,6 @@ export default function OverviewPage() {
           value={stats ? stats.trackedUsers.toLocaleString() : '—'}
           sub="on the clan hiscores"
           icon={<UsersIcon size={16} />}
-        />
-        <MetricCard
-          label="Price snapshots"
-          value={stats ? formatCompact(stats.priceSnapshots) : '—'}
-          sub={stats?.latestPriceAt ? `updated ${formatRelative(stats.latestPriceAt)}` : undefined}
-          icon={<TagIcon size={16} />}
         />
         <MetricCard
           label="Log entries"
