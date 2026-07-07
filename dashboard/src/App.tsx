@@ -10,6 +10,7 @@ import PlayersPage from './pages/PlayersPage'
 import PlayerDetailPage from './pages/PlayerDetailPage'
 import JobsPage from './pages/JobsPage'
 import LogsPage from './pages/LogsPage'
+import CommandsPage from './pages/CommandsPage'
 import ChangelogPage from './pages/ChangelogPage'
 
 type AuthState =
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="jobs" element={<JobsPage />} />
           <Route path="logs" element={<LogsPage />} />
         </Route>
+        <Route path="commands" element={<CommandsPage />} />
         <Route path="changelog" element={<ChangelogPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

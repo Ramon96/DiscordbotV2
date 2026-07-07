@@ -43,7 +43,7 @@ public class LookupCommand : IDiscordCommand
 
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Get an OSRS player recap: top XP gains and boss KC increases over a period")
+            .WithDescription("Get an OSRS player recap: top XP gains and boss kill counts over a period.")
             .AddOption("username", ApplicationCommandOptionType.String, "The OSRS username to look up", isRequired: true, isAutocomplete: true)
             .AddOption(periodOption)
             .Build();

@@ -96,6 +96,19 @@ public class CommandContractTests
         Assert.Equal(command.Name, definition.Name.Value);
     }
 
+    [Theory]
+    [MemberData(nameof(DiscoveredCommands))]
+    public void Command_definition_has_a_description(int index, string typeName)
+    {
+        // The /help command lists every command by its description, so a missing description
+        // would leave a command looking blank in the list (and Discord requires one anyway).
+        var definition = Commands[index].GetCommandDefinition();
+
+        Assert.True(definition.Description.IsSpecified, $"{typeName} definition has no description set.");
+        Assert.False(string.IsNullOrWhiteSpace(definition.Description.Value),
+            $"{typeName} definition has a blank description.");
+    }
+
     [Fact]
     public void Command_names_are_unique()
     {

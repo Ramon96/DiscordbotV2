@@ -37,8 +37,8 @@ public partial class FeatureCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Request a feature. The bot uses opencode to analyze, build, and submit a pull request.")
-            .AddOption("description", ApplicationCommandOptionType.String, "Describe the feature you want to add to the bot", isRequired: true)
+            .WithDescription("Request a new feature — GLaDOS analyses it, writes the code, and opens a pull request.")
+            .AddOption("description", ApplicationCommandOptionType.String, "Describe the feature you want added to the bot", isRequired: true)
             .Build();
     }
 

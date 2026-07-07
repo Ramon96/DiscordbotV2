@@ -11,7 +11,7 @@ public class PingCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Returns pong")
+            .WithDescription("Check whether GLaDOS is online and responding.")
             .Build();
     }
 

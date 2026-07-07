@@ -23,7 +23,7 @@ public class HottieStatsCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Show the Hottie of the Day leaderboard and stats")
+            .WithDescription("Show the Hottie of the Day leaderboard and win counts.")
             .Build();
     }
 

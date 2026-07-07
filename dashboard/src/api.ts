@@ -204,3 +204,20 @@ export interface ChangelogEntry {
 export const changelogApi = {
   get: () => request<ChangelogEntry[]>('/api/changelog'),
 }
+
+export interface CommandOption {
+  name: string
+  description: string
+  type: string
+  required: boolean
+}
+
+export interface CommandInfo {
+  name: string
+  description: string
+  options: CommandOption[]
+}
+
+export const commandsApi = {
+  get: () => request<CommandInfo[]>('/api/commands'),
+}

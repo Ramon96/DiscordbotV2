@@ -21,7 +21,7 @@ public class RandomEmojiCommand : IDiscordCommand
     {
         return new SlashCommandBuilder()
             .WithName(Name)
-            .WithDescription("Displays a random emoji from this server")
+            .WithDescription("Show a random emoji from this server.")
             .Build();
     }
 
