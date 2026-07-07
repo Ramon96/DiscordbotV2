@@ -31,7 +31,10 @@ public static class DashboardAuthExtensions
             options.KnownProxies.Clear();
         });
 
-        services
+        var clientId = configuration["Discord:ClientId"];
+        var clientSecret = configuration["Discord:ClientSecret"];
+
+        var authenticationBuilder = services
             .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
@@ -46,11 +49,18 @@ public static class DashboardAuthExtensions
                 // than redirecting to a server-rendered login page.
                 options.Events.OnRedirectToLogin = context => WriteStatus(context, StatusCodes.Status401Unauthorized);
                 options.Events.OnRedirectToAccessDenied = context => WriteStatus(context, StatusCodes.Status403Forbidden);
-            })
-            .AddOAuth(DiscordScheme, options =>
+            });
+
+        // Only register the Discord scheme when it's actually configured. The OAuth handler
+        // participates in every request (to detect its callback) and validates its options on
+        // init, so registering it with an empty ClientId/Secret throws on every request and takes
+        // the whole site down. Without these secrets the dashboard simply can't be signed into.
+        if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+        {
+            authenticationBuilder.AddOAuth(DiscordScheme, options =>
             {
-                options.ClientId = configuration["Discord:ClientId"] ?? string.Empty;
-                options.ClientSecret = configuration["Discord:ClientSecret"] ?? string.Empty;
+                options.ClientId = clientId;
+                options.ClientSecret = clientSecret;
                 options.CallbackPath = "/api/auth/callback";
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
@@ -106,6 +116,7 @@ public static class DashboardAuthExtensions
                     return Task.CompletedTask;
                 };
             });
+        }
 
         services.AddAuthorization();
 
