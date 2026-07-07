@@ -886,15 +886,6 @@ select:focus {
   color: var(--muted);
 }
 
-.placeholder-note {
-  margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius);
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-
 /* ---------- Tables (shared) ---------- */
 
 .data-table {

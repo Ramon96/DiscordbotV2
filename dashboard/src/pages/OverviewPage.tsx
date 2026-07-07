@@ -96,11 +96,6 @@ export default function OverviewPage() {
           </span>
         </Link>
       </section>
-
-      <p className="placeholder-note">
-        🚧 More fun stuff is coming to this page soon — the Hottie leaderboard, command-usage stats,
-        the OSRS fuckup board and a shirtless-old-man carousel.
-      </p>
     </div>
   )
 }
