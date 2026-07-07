@@ -127,6 +127,15 @@ export function DiscordIcon({ size = 18, className }: IconProps) {
   )
 }
 
+export function TerminalIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="m7 9 3 3-3 3M13 15h4" />
+    </svg>
+  )
+}
+
 export function MenuIcon({ size = 22, className }: IconProps) {
   return (
     <svg {...base(size, className)}>

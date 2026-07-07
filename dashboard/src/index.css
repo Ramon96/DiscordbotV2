@@ -1264,6 +1264,77 @@ select:focus {
   background: var(--accent-soft);
 }
 
+/* ---------- Commands ---------- */
+
+.command-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.card.command-card {
+  padding: 1.15rem 1.3rem;
+}
+
+.command-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+  letter-spacing: 0.01em;
+}
+
+.command-desc {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.command-options {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.command-option {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 0.4rem 0.55rem;
+}
+
+.command-option-name {
+  font-size: 0.82rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.command-option-tag {
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  color: var(--faint);
+  background: var(--surface-3);
+}
+
+.command-option-tag.required {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.command-option-desc {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--faint);
+}
+
 /* ---------- Changelog ---------- */
 
 .changelog-list {

@@ -9,6 +9,7 @@ import {
   ServerIcon,
   SwordIcon,
   TagIcon,
+  TerminalIcon,
 } from './Icons'
 
 interface SidebarProps {
@@ -28,6 +29,7 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { to: '/', label: 'Overview', icon: <HomeIcon />, end: true },
   { to: '/runescape', label: 'RuneScape', icon: <SwordIcon /> },
+  { to: '/commands', label: 'Commands', icon: <TerminalIcon /> },
 ]
 
 const systemNav: NavItem[] = [
