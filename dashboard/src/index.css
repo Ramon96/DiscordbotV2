@@ -538,6 +538,106 @@ select:focus {
   gap: 0.4rem;
 }
 
+/* GLaDOS core status readout — the facility is live. */
+.core-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  margin: 0 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.core-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .core-status-dot {
+    animation: core-pulse 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes core-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px var(--success);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 2px var(--success);
+  }
+}
+
+.core-status-text {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- Mobile top bar + drawer chrome ---------- */
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  padding: 0.4rem;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+/* Top bar only appears on small screens (see responsive block). */
+.topbar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.topbar-brand strong {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(4, 5, 8, 0.66);
+  backdrop-filter: blur(2px);
+}
+
+/* Close button lives inside the drawer; hidden on desktop. */
+.drawer-close {
+  display: none;
+  margin-left: auto;
+}
+
 /* ---------- Main content ---------- */
 
 .main {
@@ -1302,45 +1402,102 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
+  /* Reveal the mobile top bar. */
+  .topbar {
+    display: flex;
+  }
+
+  .drawer-backdrop {
+    display: block;
+  }
+
+  .drawer-close {
+    display: inline-grid;
+  }
+
+  /* Sidebar becomes an off-canvas drawer. */
   .sidebar {
-    position: static;
-    height: auto;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    gap: 0.75rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    height: 100vh;
+    height: 100dvh;
+    width: min(300px, 84vw);
+    border-right: 1px solid var(--border);
+    box-shadow: 24px 0 60px -30px rgba(0, 0, 0, 0.9);
+    transform: translateX(-105%);
+    transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .sidebar-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-    overflow: visible;
-  }
-
-  .sidebar-group {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .sidebar-group-label {
-    display: none;
-  }
-
-  .sidebar-footer {
-    border-top: none;
-    padding-top: 0;
-    flex-direction: row;
-    align-items: center;
-    margin-left: auto;
-  }
-
-  .sidebar-footer button {
-    width: auto;
+  .sidebar.open {
+    transform: translateX(0);
   }
 
   .main-inner {
-    padding: 1.25rem 1.1rem 2.5rem;
+    padding: 1.15rem 1.05rem 2.5rem;
+  }
+
+  .page-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .page-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .page-actions {
+    flex-wrap: wrap;
+  }
+
+  .hero {
+    gap: 1rem;
+    padding: 1.35rem 1.4rem;
+  }
+
+  .hero h1 {
+    font-size: 1.2rem;
+  }
+
+  .logs-filters {
+    flex-wrap: wrap;
+  }
+
+  .logs-filters input {
+    flex-basis: 100%;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+/* Extra squeeze for small phones. */
+@media (max-width: 460px) {
+  .metric-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+  }
+
+  .card.metric {
+    padding: 0.9rem 1rem;
+  }
+
+  .metric-value {
+    font-size: 1.4rem;
+  }
+
+  .shortcut-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subtabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .subtabs a {
+    white-space: nowrap;
   }
 }

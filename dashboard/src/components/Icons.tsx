@@ -127,6 +127,24 @@ export function DiscordIcon({ size = 18, className }: IconProps) {
   )
 }
 
+export function MenuIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M3 6h18M3 12h18M3 18h18" />
+    </svg>
+  )
+}
+
+export function CloseIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  )
+}
+
+// A camera-aperture iris — six blades enclosing the central opening.
+// Evokes the optical "aperture" the facility is named for.
 export function ApertureLogo({ size = 28, className }: IconProps) {
   return (
     <svg
@@ -135,14 +153,18 @@ export function ApertureLogo({ size = 28, className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
+      strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
     >
-      <circle cx="12" cy="12" r="9.2" />
-      <path d="M12 2.8 8.6 9.4M21 9.5l-7.4-.6M18.8 19.4 13.5 14M5.2 19.4l5.3-5.4M3 9.5l7.4-.6" />
-      <circle cx="12" cy="12" r="3.4" />
+      <circle cx="12" cy="12" r="9.4" />
+      <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
+      <line x1="9.69" y1="8" x2="21.17" y2="8" />
+      <line x1="7.38" y1="12" x2="13.12" y2="2.06" />
+      <line x1="9.69" y1="16" x2="3.95" y2="6.06" />
+      <line x1="14.31" y1="16" x2="2.83" y2="16" />
+      <line x1="16.62" y1="12" x2="10.88" y2="21.94" />
     </svg>
   )
 }
