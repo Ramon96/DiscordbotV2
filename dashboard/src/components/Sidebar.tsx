@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { CurrentUser } from '../api'
 import {
   ApertureLogo,
+  CloseIcon,
   HomeIcon,
   LogOutIcon,
   ServerIcon,
@@ -13,6 +14,8 @@ import {
 interface SidebarProps {
   user: CurrentUser
   onLogout: () => void
+  open?: boolean
+  onClose?: () => void
 }
 
 interface NavItem {
@@ -51,23 +54,32 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
   )
 }
 
-export default function Sidebar({ user, onLogout }: SidebarProps) {
+export default function Sidebar({ user, onLogout, open, onClose }: SidebarProps) {
   const isAdmin = user.role === 'Admin'
 
   return (
-    <aside className="sidebar">
+    <aside className={open ? 'sidebar open' : 'sidebar'}>
       <div className="sidebar-brand">
         <ApertureLogo size={30} className="aperture" />
         <span className="sidebar-brand-text">
           <strong>GLaDOS</strong>
           <span>Enrichment Center</span>
         </span>
+        <button className="ghost icon-btn drawer-close" aria-label="Close menu" onClick={onClose}>
+          <CloseIcon size={20} />
+        </button>
+      </div>
+      <div className="sidebar-rule" />
+
+      <div className="core-status">
+        <span className="core-status-dot" />
+        <span className="core-status-text">GLaDOS Core · Online</span>
       </div>
       <div className="sidebar-rule" />
 
       <nav className="sidebar-nav">
-        <NavGroup label="Main" items={mainNav} />
-        <NavGroup label="System" items={systemNav} />
+        <NavGroup label="Enrichment" items={mainNav} />
+        <NavGroup label="Facility" items={systemNav} />
       </nav>
 
       <div className="sidebar-footer">
