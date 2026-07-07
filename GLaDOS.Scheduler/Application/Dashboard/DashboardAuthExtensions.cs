@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.DataProtection;
@@ -49,6 +50,21 @@ public static class DashboardAuthExtensions
                 // than redirecting to a server-rendered login page.
                 options.Events.OnRedirectToLogin = context => WriteStatus(context, StatusCodes.Status401Unauthorized);
                 options.Events.OnRedirectToAccessDenied = context => WriteStatus(context, StatusCodes.Status403Forbidden);
+
+                // Reject any cookie that isn't a real Discord sign-in. Data Protection keys persist
+                // across deploys, so legacy cookies from the old password login (no Discord id, no
+                // role) still decrypt and would grant access — this forces every session through
+                // the current Discord OAuth flow.
+                options.Events.OnValidatePrincipal = async context =>
+                {
+                    var hasDiscordId = !string.IsNullOrEmpty(context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier));
+                    var hasRole = context.Principal?.FindFirst(ClaimTypes.Role) is not null;
+                    if (!hasDiscordId || !hasRole)
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    }
+                };
             });
 
         // Only register the Discord scheme when it's actually configured. The OAuth handler
