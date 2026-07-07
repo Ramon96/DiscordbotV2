@@ -114,9 +114,7 @@ export interface JobsResponse {
 
 export interface StatsResponse {
   trackedUsers: number
-  priceSnapshots: number
   logEntries: number
-  latestPriceAt: string | null
 }
 
 export const jobsApi = {

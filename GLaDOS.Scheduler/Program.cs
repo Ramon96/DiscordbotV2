@@ -145,10 +145,11 @@ if (runRecurringJobs)
         job => job.ExecuteAsync(null, CancellationToken.None),
         Cron.Hourly);
 
-    RecurringJob.AddOrUpdate<OsrsPriceFetcherJob>(
-        "fetch-osrs-prices",
-        job => job.ExecuteAsync(null, CancellationToken.None),
-        "*/5 * * * *");
+    // Deprecated: the OSRS Grand Exchange price feed (backing the /osrsflips command) is disabled —
+    // it wrote ~1.1M snapshot rows/day on an ironman-focused server. RemoveIfExists clears the
+    // previously-registered recurring job on deploy so it stops running. Re-enable by restoring the
+    // AddOrUpdate above and removing [DeprecatedCommand] from OsrsFlipsCommand.
+    RecurringJob.RemoveIfExists("fetch-osrs-prices");
 
     RecurringJob.AddOrUpdate<OsrsItemMappingJob>(
         "sync-item-mappings",
