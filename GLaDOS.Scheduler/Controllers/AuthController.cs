@@ -13,8 +13,17 @@ public class AuthController : ControllerBase
 {
     [HttpGet("login")]
     [AllowAnonymous]
-    public IActionResult Login([FromQuery] string? returnUrl)
+    public async Task<IActionResult> LoginAsync(
+        [FromQuery] string? returnUrl,
+        [FromServices] IAuthenticationSchemeProvider schemeProvider)
     {
+        // The Discord scheme is only registered when its client id/secret are configured. If it's
+        // missing, redirect back to the SPA with a friendly error instead of throwing.
+        if (await schemeProvider.GetSchemeAsync(DashboardAuthExtensions.DiscordScheme) is null)
+        {
+            return Redirect("/dashboard/?authError=1");
+        }
+
         // Kicks off the Discord OAuth flow; the handler signs in the cookie on the callback and
         // redirects back to the SPA.
         var redirect = string.IsNullOrEmpty(returnUrl) ? "/dashboard/" : returnUrl;
