@@ -9,7 +9,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ApiError, playersApi } from '../api'
-import { formatCompact, formatDate } from '../lib/format'
+import { compactAxisFormatter, formatDate, formatFull } from '../lib/format'
 import TimeRangeButtons from './TimeRangeButtons'
 import { filterByRange, type TimeRange } from '../lib/range'
 
@@ -107,8 +107,8 @@ export default function PlayerHistoryModal({
               <YAxis
                 domain={['auto', 'auto']}
                 tick={{ fill: 'var(--muted)', fontSize: 11 }}
-                width={48}
-                tickFormatter={(value) => formatCompact(value as number)}
+                width={56}
+                tickFormatter={compactAxisFormatter(chartData.map((point) => point.value))}
               />
               <Tooltip
                 contentStyle={{
@@ -117,7 +117,7 @@ export default function PlayerHistoryModal({
                   borderRadius: 8,
                   color: 'var(--text)',
                 }}
-                formatter={(value) => `${formatCompact(value as number)} ${unit}`}
+                formatter={(value) => `${formatFull(value as number)} ${unit}`}
               />
               <Line type="monotone" dataKey="value" stroke="#5b8cff" dot={false} isAnimationActive={false} />
             </LineChart>

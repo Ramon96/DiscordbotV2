@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import { ApiError, playersApi, type PlayerDetail } from '../api'
 import type { DashboardOutletContext } from '../components/DashboardLayout'
-import { formatCompact, formatDate } from '../lib/format'
+import { compactAxisFormatter, formatCompact, formatDate, formatFull } from '../lib/format'
 import { levelProgress, xpToNextLevel } from '../lib/osrs'
 import PlayerHistoryModal, { type HistorySelection } from '../components/PlayerHistoryModal'
 import CollectionLogTab from '../components/CollectionLogTab'
@@ -106,8 +106,8 @@ export default function PlayerDetailPage() {
               <YAxis
                 domain={['auto', 'auto']}
                 tick={{ fill: 'var(--muted)', fontSize: 11 }}
-                width={48}
-                tickFormatter={(value) => formatCompact(value as number)}
+                width={56}
+                tickFormatter={compactAxisFormatter(chartData.map((point) => point.xp))}
               />
               <Tooltip
                 contentStyle={{
@@ -116,7 +116,7 @@ export default function PlayerDetailPage() {
                   borderRadius: 8,
                   color: 'var(--text)',
                 }}
-                formatter={(value) => `${formatCompact(value as number)} XP`}
+                formatter={(value) => `${formatFull(value as number)} XP`}
               />
               <Line type="monotone" dataKey="xp" stroke="#5b8cff" dot={false} isAnimationActive={false} />
             </LineChart>
