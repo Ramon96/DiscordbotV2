@@ -2,6 +2,8 @@ using Discord.WebSocket;
 using Hangfire;
 using Hangfire.Console;
 using Hangfire.Server;
+using GLaDOS.Domain.Discord;
+using GLaDOS.Infra.EntityFramework;
 using GLaDOS.Scheduler.Application.Discord.Clients;
 using GLaDOS.Scheduler.Application.Hangfire.Contracts;
 
@@ -14,17 +16,20 @@ public class ShirtlessOldManJob : IHangfireJob
     private readonly ILogger<ShirtlessOldManJob> _logger;
     private readonly DiscordSocketClient _discord;
     private readonly IShirtlessOldManImageService _imageService;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     private const ulong GeneralChannelId = 867074325824012382;
 
     public ShirtlessOldManJob(
         ILogger<ShirtlessOldManJob> logger,
         DiscordSocketClient discord,
-        IShirtlessOldManImageService imageService)
+        IShirtlessOldManImageService imageService,
+        IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
         _discord = discord;
         _imageService = imageService;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task ExecuteAsync(PerformContext context, CancellationToken cancellationToken = default)
@@ -89,10 +94,25 @@ public class ShirtlessOldManJob : IHangfireJob
         }
 
         var message = $"<@{winner.Id}> check dit! :older_man:";
-        await channel.SendMessageAsync(message, embed: new global::Discord.EmbedBuilder()
+        var posted = await channel.SendMessageAsync(message, embed: new global::Discord.EmbedBuilder()
             .WithImageUrl(result.ImageUrl)
             .WithColor(global::Discord.Color.Gold)
             .Build());
+
+        // Persist the post so the dashboard gallery can show it.
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            dbContext.Set<ShirtlessOldManPost>().Add(new ShirtlessOldManPost
+            {
+                MessageId = posted.Id,
+                ImageUrl = result.ImageUrl,
+                TaggedDiscordUserId = winner.Id,
+                TaggedUsername = winner.Username,
+                PostedAt = posted.Timestamp.UtcDateTime,
+            });
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         _logger.LogInformation("Shirtless old man posted in #{ChannelName} tagging {Username}", channel.Name, winner.Username);
         context.WriteLine($"Posted in #{channel.Name} tagging {winner.Username}");

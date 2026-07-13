@@ -53,6 +53,7 @@ builder.Services.AddTransient<OsrsItemMappingJob>();
 builder.Services.AddTransient<StatsSnapshotJob>();
 builder.Services.AddTransient<HottieOfTheDayJob>();
 builder.Services.AddTransient<ShirtlessOldManJob>();
+builder.Services.AddTransient<ShirtlessOldManBackfillJob>();
 builder.Services.AddTransient<LogRetentionJob>();
 
 builder.Services.AddHttpClient<IOsrsPriceClient, OsrsPriceClient>(client =>
@@ -177,6 +178,12 @@ if (runRecurringJobs)
         Cron.Daily);
 
     BackgroundJob.Enqueue<OsrsItemMappingJob>(job => job.ExecuteAsync(null, CancellationToken.None));
+
+    // One-off idempotent backfill of the shirtless-old-man gallery from channel history. Delayed so
+    // the Discord gateway has time to connect; re-runs are harmless (rows de-dupe by message id).
+    BackgroundJob.Schedule<ShirtlessOldManBackfillJob>(
+        job => job.ExecuteAsync(null, CancellationToken.None),
+        TimeSpan.FromMinutes(1));
 }
 else
 {
