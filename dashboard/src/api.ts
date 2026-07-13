@@ -219,3 +219,13 @@ export interface CommandInfo {
 export const commandsApi = {
   get: () => request<CommandInfo[]>('/api/commands'),
 }
+
+export interface ShirtlessPost {
+  imageUrl: string
+  postedAt: string
+  taggedUsername: string | null
+}
+
+export const overviewApi = {
+  shirtless: (limit = 12) => request<ShirtlessPost[]>(`/api/overview/shirtless?limit=${limit}`),
+}

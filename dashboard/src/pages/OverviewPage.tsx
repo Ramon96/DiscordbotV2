@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { ApiError, metricsApi, statsApi } from '../api'
+import { ApiError, metricsApi, overviewApi, statsApi } from '../api'
 import type { DashboardOutletContext } from '../components/DashboardLayout'
 import { usePolling } from '../hooks/usePolling'
-import { formatCompact, formatUptime } from '../lib/format'
+import { formatCompact, formatRelative, formatUptime } from '../lib/format'
 import MetricCard from '../components/MetricCard'
 import {
   ApertureLogo,
@@ -19,6 +19,7 @@ export default function OverviewPage() {
   const { onLogout, user } = useOutletContext<DashboardOutletContext>()
   const { data: stats, error: statsError } = usePolling(statsApi.get, 30000)
   const { data: metrics, error: metricsError } = usePolling(metricsApi.get, 15000)
+  const { data: shirtless } = usePolling(overviewApi.shirtless, 120000)
 
   useEffect(() => {
     const err = statsError ?? metricsError
@@ -90,6 +91,40 @@ export default function OverviewPage() {
           </span>
         </Link>
       </section>
+
+      <h2 className="section-title">Shirtless Old Man Gallery</h2>
+      {shirtless && shirtless.length > 0 ? (
+        <section className="gallery-grid">
+          {shirtless.map((post) => (
+            <a
+              key={`${post.imageUrl}-${post.postedAt}`}
+              href={post.imageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="card gallery-item"
+            >
+              <img
+                src={post.imageUrl}
+                alt="A shirtless old man"
+                loading="lazy"
+                onError={(event) => {
+                  const card = event.currentTarget.closest('.gallery-item') as HTMLElement | null
+                  if (card) {
+                    card.style.display = 'none'
+                  }
+                }}
+              />
+              <span className="gallery-caption">
+                {post.taggedUsername ? `@${post.taggedUsername}` : 'someone'} · {formatRelative(post.postedAt)}
+              </span>
+            </a>
+          ))}
+        </section>
+      ) : (
+        <p className="gallery-empty">
+          No shirtless old men on file yet — GLaDOS posts one every Monday. Check back soon. 👴
+        </p>
+      )}
     </div>
   )
 }

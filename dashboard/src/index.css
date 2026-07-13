@@ -1563,3 +1563,56 @@ select:focus {
     white-space: nowrap;
   }
 }
+
+/* ---------- Shirtless Old Man gallery ---------- */
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.gallery-item {
+  padding: 0;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.gallery-item::before {
+  display: none;
+}
+
+.gallery-item:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.gallery-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: var(--surface-2);
+}
+
+.gallery-caption {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gallery-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+}
